@@ -6,13 +6,8 @@ import { useNavigate } from "react-router-dom";
 import sharkAnimation from "../../assets/shark-swimming.json";
 import styles from "./Home.module.css";
 
-// TypeScript declaration for import.meta.glob
-// @ts-ignore
-const imageModules = import.meta.glob("../../assets/games/*.png", {
-  eager: true,
-});
-
-const images = Object.values(imageModules).map((mod: any) => mod.default);
+// src/pages/Home/Home.tsx
+import { images } from "../../assets/games/gameImages";
 
 const sliderSettings = {
   infinite: true,
