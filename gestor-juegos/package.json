@@ -23,6 +23,7 @@
     "web-vitals": "^2.1.4"
   },
   "scripts": {
+    "clean": "rimraf node_modules pnpm-lock.yaml ./.cache",
     "start": "react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test",
@@ -47,7 +48,9 @@
     ]
   },
   "devDependencies": {
+    "@types/axios": "^0.9.36",
     "@types/react-router-dom": "^5.3.3",
-    "eslint-config-react-app": "^7.0.1"
+    "eslint-config-react-app": "^7.0.1",
+    "rimraf": "^6.0.1"
   }
 }
