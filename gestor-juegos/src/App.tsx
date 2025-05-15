@@ -4,7 +4,7 @@ import { Login } from "./components/Auth/Login";
 import { Register } from "./components/Auth/Register";
 import Home from "./pages/Home";
 import Dashboard from "./pages/Dashboard";
-import { GameList } from "./components/GameList/GameList";
+import { GameList } from "./components/GameList/GameList"; // Coincide con el casing
 import { useAuth } from "./hooks/useAuth";
 
 function App() {
@@ -18,6 +18,7 @@ function App() {
         <Route path="/" element={<Home />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
+        <Route path="/games" element={<GameList />} />
 
         <Route
           path="/dashboard"
