@@ -1,0 +1,55 @@
+/* src/pages/Home/Home.module.css */
+.container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  background: #121212;
+  color: white;
+  position: relative;
+  overflow: hidden;
+}
+
+.title {
+  font-size: 3rem;
+  z-index: 2;
+  text-align: center;
+}
+
+.carousel {
+  width: 200px;
+  height: 300px;
+  z-index: 1;
+}
+
+.center {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  z-index: 2;
+}
+
+.buttons {
+  margin-top: 20px;
+  display: flex;
+  gap: 1rem;
+}
+
+button {
+  padding: 10px 20px;
+  background-color: #00bcd4;
+  border: none;
+  border-radius: 8px;
+  color: white;
+  cursor: pointer;
+  font-weight: bold;
+}
+
+button:hover {
+  background-color: #008c9e;
+}
+
+.shark {
+  width: 300px;
+  margin: 20px auto;
+}

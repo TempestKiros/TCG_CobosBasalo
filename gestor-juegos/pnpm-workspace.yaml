@@ -1,0 +1,7 @@
+ignoredBuiltDependencies:
+  - core-js-pure
+  - protobufjs
+onlyBuiltDependencies:
+  - '@firebase/util'
+  - core-js
+  - es5-ext
