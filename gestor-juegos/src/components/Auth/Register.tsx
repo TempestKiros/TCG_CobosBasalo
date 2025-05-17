@@ -1,9 +1,11 @@
 import React, { useState } from "react";
 import { createUserWithEmailAndPassword } from "firebase/auth";
 import { auth } from "../../firebase"; // Ajusta la ruta si tu firebase.ts está en otro lugar
+import { useNavigate } from "react-router-dom"; // ← IMPORTANTE
 
 export function Register() {
   // Estados para los campos y el error
+  const navigate = useNavigate(); // ← NUEVO
   const [email, setEmail] = useState<string>("");
   const [password, setPassword] = useState<string>("");
   const [error, setError] = useState<string | null>(null);
@@ -15,12 +17,9 @@ export function Register() {
     setLoading(true);
 
     try {
-      // Crea el usuario en Firebase Auth
       await createUserWithEmailAndPassword(auth, email, password);
-      // Aquí podrías, por ejemplo, redirigir al login:
-      // navigate('/login');
+      navigate("/dashboard"); // ← REDIRECCIÓN tras registro
     } catch (err: any) {
-      // Muestra el mensaje de Firebase en caso de error
       setError(err.message);
     } finally {
       setLoading(false);

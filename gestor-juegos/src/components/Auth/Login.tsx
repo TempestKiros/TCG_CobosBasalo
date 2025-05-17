@@ -1,9 +1,11 @@
 import React, { useState } from "react";
 import { signInWithEmailAndPassword } from "firebase/auth";
 import { auth } from "../../firebase";
+import { useNavigate } from "react-router-dom"; // ← IMPORTANTE
 
 export function Login() {
   // 1) Declaro los estados
+  const navigate = useNavigate();
   const [email, setEmail] = useState<string>("");
   const [password, setPassword] = useState<string>("");
   const [error, setError] = useState<string | null>(null);
@@ -12,7 +14,7 @@ export function Login() {
     e.preventDefault();
     try {
       await signInWithEmailAndPassword(auth, email, password);
-      // redirige o actualiza estado global...
+      navigate("/dashboard"); // ← REDIRECCIÓN
     } catch (err: any) {
       setError(err.message);
     }
