@@ -1,3 +1,4 @@
+// src/pages/Dashboard/Sections/Perfil.tsx
 import React, { useState } from "react";
 import "./Perfil.css";
 import {
@@ -8,10 +9,16 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from "recharts";
+import { User } from "firebase/auth"; // IMPORTANTE
+
+// ⬅️ Declara el tipo de las props
+interface PerfilProps {
+  user: User;
+}
 
 const dataEjemplo = [
   { semana: "01-07", horas: 5 },
-  { semana: "08-14", horas: 10 },
+  { semana: "08-14", horas: 12 },
   { semana: "15-21", horas: 7 },
   { semana: "22-28", horas: 13 },
 ];
@@ -22,12 +29,12 @@ const horariosSemana = [
   { día: "Viernes", hora: "17:00 - 19:00" },
 ];
 
-const Perfil: React.FC = () => {
+// ⬅️ Acepta las props aquí
+const Perfil: React.FC<PerfilProps> = ({ user }) => {
   const [mesSeleccionado, setMesSeleccionado] = useState("2025-05");
 
   return (
     <div className="perfil-layout">
-      {/* SIDEBAR PERFIL */}
       <aside className="perfil-sidebar">
         <img
           src="https://i.pravatar.cc/150?img=3"
@@ -38,38 +45,28 @@ const Perfil: React.FC = () => {
           <p>
             <strong>Nombre de Usuario:</strong>
             <br />
-            Deep Feeder
+            {user.displayName || "Sin nombre"}
           </p>
           <p>
             <strong>Identificador del Usuario:</strong>
-            <br />
-            @TempestKiros
+            <br />@{user.uid}
           </p>
-          <p>
-            <strong>Descripción:</strong>
-            <br />
-            Player by trade and a
-          </p>
-          <button className="perfil-editar">Editar perfil</button>
           <p>
             <strong>Email:</strong>
             <br />
-            gamma.deep.feeders@gmail.com
+            {user.email}
           </p>
           <p>
             <strong>Miembro desde:</strong>
             <br />
-            Enero 2024
-          </p>
-          <p>
-            <strong>Seguidores:</strong> 0 · <strong>Siguiendo:</strong> 2
+            {user.metadata?.creationTime
+              ? new Date(user.metadata.creationTime).toLocaleDateString()
+              : "Desconocido"}
           </p>
         </div>
       </aside>
 
-      {/* CONTENIDO PRINCIPAL */}
       <main className="perfil-contenido">
-        {/* Selector de mes */}
         <div className="perfil-controles">
           <label>Selecciona el mes: </label>
           <input
@@ -78,7 +75,7 @@ const Perfil: React.FC = () => {
             onChange={(e) => setMesSeleccionado(e.target.value)}
           />
         </div>
-        {/* Tabla de horarios */}
+
         <div className="perfil-horarios">
           <h3>Horarios generados esta semana</h3>
           <table>
@@ -99,7 +96,6 @@ const Perfil: React.FC = () => {
           </table>
         </div>
 
-        {/* Gráfico de barras */}
         <div className="perfil-grafico">
           <h3>Horas jugadas en {mesSeleccionado}</h3>
           <ResponsiveContainer width="100%" height={250}>

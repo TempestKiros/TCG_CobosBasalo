@@ -1,7 +1,7 @@
 // src/pages/Dashboard/Sections/Ajustes.tsx
 import React from "react";
 import { signOut } from "firebase/auth";
-import { auth } from "../../../firebase";
+import { auth } from "../../../firebase/config";
 import { useTheme } from "../../../hooks/useTheme";
 
 const Ajustes: React.FC = () => {

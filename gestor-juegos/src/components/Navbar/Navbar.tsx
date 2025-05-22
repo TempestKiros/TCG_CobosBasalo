@@ -1,23 +1,28 @@
-// src/components/Navbar/Navbar.tsx
-import React from "react";
+import React, { Dispatch, SetStateAction } from "react";
 import styles from "./Navbar.module.css";
 
+export type Section = "perfil" | "horarios" | "juegos" | "anuncios" | "ajustes";
+
 interface NavbarProps {
-  onSelect: (section: string) => void;
-  activeSection: string;
+  onSelect: Dispatch<SetStateAction<Section>>;
+  active: Section;
 }
 
-const Navbar: React.FC<NavbarProps> = ({ onSelect, activeSection }) => {
-  const sections = ["perfil", "horarios", "juegos", "anuncios", "ajustes"];
+const Navbar: React.FC<NavbarProps> = ({ onSelect, active }) => {
+  const sections: Section[] = [
+    "perfil",
+    "horarios",
+    "juegos",
+    "anuncios",
+    "ajustes",
+  ];
 
   return (
     <nav className={styles.navbar}>
       {sections.map((sec) => (
         <button
           key={sec}
-          className={`${styles.navItem} ${
-            activeSection === sec ? styles.active : ""
-          }`}
+          className={`${styles.navItem} ${active === sec ? styles.active : ""}`}
           onClick={() => onSelect(sec)}
         >
           {sec.charAt(0).toUpperCase() + sec.slice(1)}

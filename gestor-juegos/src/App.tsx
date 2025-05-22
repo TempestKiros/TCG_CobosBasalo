@@ -1,15 +1,10 @@
 import React from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import { Login } from "./components/Auth/Login";
-import { Register } from "./components/Auth/Register";
+import Login from "./pages/Auth/Login";
+import Register from "./pages/Auth/Register";
 import { Home } from "./pages/Home/Home";
 import Dashboard from "./pages/Dashboard/Dashboard";
 import { PrivateRoute } from "./components/PrivateRoute";
-import Perfil from "./pages/Dashboard/Sections/Perfil";
-import Horarios from "./pages/Dashboard/Sections/Horarios";
-import Juegos from "./pages/Dashboard/Sections/Juegos";
-import Anuncios from "./pages/Dashboard/Sections/Anuncios";
-import Ajustes from "./pages/Dashboard/Sections/Ajustes";
 
 const App: React.FC = () => {
   return (
@@ -19,21 +14,17 @@ const App: React.FC = () => {
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
 
+        {/* Sólo una ruta para Dashboard */}
         <Route
-          path="/dashboard"
+          path="/dashboard/*"
           element={
             <PrivateRoute>
               <Dashboard />
             </PrivateRoute>
           }
-        >
-          <Route path="perfil" element={<Perfil />} />
-          <Route path="horarios" element={<Horarios />} />
-          <Route path="juegos" element={<Juegos />} />
-          <Route path="anuncios" element={<Anuncios />} />
-          <Route path="ajustes" element={<Ajustes />} />
-        </Route>
+        />
 
+        {/* Cualquier otra, al Home */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>

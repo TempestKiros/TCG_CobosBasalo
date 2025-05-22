@@ -1,37 +1,57 @@
-// src/pages/Dashboard/Dashboard.tsx
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { useAuth } from "../../hooks/useAuth";
 import Navbar from "../../components/Navbar/Navbar";
 import Perfil from "./Sections/Perfil";
-import Horarios from "./Sections/Horarios";
-import Juegos from "./Sections/Juegos";
-import Anuncios from "./Sections/Anuncios";
-import Ajustes from "./Sections/Ajustes";
-import styles from "./Dashboard.module.css";
+import HorariosSection from "./Sections/Horarios";
+import JuegosSection from "./Sections/Juegos";
+import AnunciosSection from "./Sections/Anuncios";
+import AjustesSection from "./Sections/Ajustes";
+import { obtenerHorarios } from "../../services/horarios";
 
 const Dashboard: React.FC = () => {
-  const [section, setSection] = useState("perfil");
+  const { user, isLoading } = useAuth();
+  const [section, setSection] = useState<
+    "perfil" | "horarios" | "juegos" | "anuncios" | "ajustes"
+  >("perfil");
+  const [horarios, setHorarios] = useState<any[]>([]);
 
-  const renderSection = () => {
-    switch (section) {
-      case "perfil":
-        return <Perfil />;
-      case "horarios":
-        return <Horarios />;
-      case "juegos":
-        return <Juegos />;
-      case "anuncios":
-        return <Anuncios />;
-      case "ajustes":
-        return <Ajustes />;
-      default:
-        return <Perfil />;
+  useEffect(() => {
+    if (user) {
+      obtenerHorarios(user.uid).then(setHorarios);
     }
-  };
+  }, [user]);
+
+  if (isLoading || !user) return <div>Cargando...</div>;
+
+  const isAnonymous = user.isAnonymous;
 
   return (
-    <div className={styles.dashboard}>
-      <Navbar onSelect={setSection} activeSection={section} />
-      <div className={styles.sectionContent}>{renderSection()}</div>
+    <div className="dashboard">
+      <Navbar onSelect={setSection} active={section} />
+      <div className="content">
+        {isAnonymous && (
+          <div
+            style={{
+              padding: "1rem",
+              backgroundColor: "#ffeeba",
+              marginBottom: "1rem",
+            }}
+          >
+            <strong>Estás usando una sesión como invitado.</strong>
+            <br />
+            Tus datos podrían perderse si cierras la sesión.
+          </div>
+        )}
+
+        {section === "perfil" && <Perfil user={user} />}
+        {section === "horarios" && <HorariosSection data={horarios} />}
+        {section === "juegos" && <JuegosSection />}
+        {section === "anuncios" && !isAnonymous && <AnunciosSection />}
+        {section === "ajustes" && !isAnonymous && <AjustesSection />}
+        {(section === "anuncios" || section === "ajustes") && isAnonymous && (
+          <div>Esta sección no está disponible en modo invitado.</div>
+        )}
+      </div>
     </div>
   );
 };
