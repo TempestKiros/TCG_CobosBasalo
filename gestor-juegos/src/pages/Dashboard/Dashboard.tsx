@@ -44,10 +44,14 @@ const Dashboard: React.FC = () => {
         )}
 
         {section === "perfil" && <Perfil user={user} />}
-        {section === "horarios" && <HorariosSection data={horarios} />}
+        {section === "horarios" && (
+          <HorariosSection data={horarios} user={user} />
+        )}
         {section === "juegos" && <JuegosSection />}
         {section === "anuncios" && !isAnonymous && <AnunciosSection />}
-        {section === "ajustes" && !isAnonymous && <AjustesSection />}
+        {section === "ajustes" && !isAnonymous && (
+          <AjustesSection user={user} />
+        )}
         {(section === "anuncios" || section === "ajustes") && isAnonymous && (
           <div>Esta sección no está disponible en modo invitado.</div>
         )}
