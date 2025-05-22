@@ -3,5 +3,6 @@ ignoredBuiltDependencies:
   - protobufjs
 onlyBuiltDependencies:
   - '@firebase/util'
+  - '@tailwindcss/oxide'
   - core-js
   - es5-ext

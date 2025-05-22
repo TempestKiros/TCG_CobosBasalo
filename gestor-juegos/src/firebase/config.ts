@@ -1,12 +1,14 @@
-// src/firebase.ts
+// src/firebase/config.ts
 import { initializeApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
-import { getFirestore } from "firebase/firestore";
+import { getDatabase } from "firebase/database";
 
 const firebaseConfig = {
   apiKey: "AIzaSyCJCUT8qCRm-ejwtBNcBGP-hGDG6uUBWWA",
   authDomain: "gestorjuegos.firebaseapp.com",
   projectId: "gestorjuegos",
+  databaseURL:
+    "https://gestorjuegos-default-rtdb.europe-west1.firebasedatabase.app/",
   storageBucket: "gestorjuegos.firebasestorage.app",
   messagingSenderId: "962700053006",
   appId: "1:962700053006:web:c468f31e43878d20e28a5f",
@@ -15,4 +17,4 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
-export const db = getFirestore(app);
+export const database = getDatabase(app);

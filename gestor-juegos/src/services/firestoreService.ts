@@ -1,31 +1,22 @@
-// src/services/firestoreService.ts
+// src/services/realtimeDatabaseService.ts
 
 import {
-  collection,
-  doc,
-  getDocs,
-  getDoc,
-  addDoc,
-  updateDoc,
-  deleteDoc,
-  Timestamp,
-  DocumentData,
-  QuerySnapshot,
-  DocumentSnapshot,
-} from "firebase/firestore";
-import { db } from "../firebase/config";
+  ref,
+  get,
+  set,
+  update,
+  remove,
+  DatabaseReference,
+} from "firebase/database";
+import { database } from "../firebase/config";
 
-/**
- * Define la interfaz de tu documento de usuario (ajústala a tu esquema real)
- */
 export interface UserProfile {
-  id?: string;
   username: string;
   identifier: string;
   description?: string;
   email: string;
-  joinedAt: Timestamp;
-  lastLogin: Timestamp;
+  joinedAt: number; // timestamp unix en ms
+  lastLogin: number; // timestamp unix en ms
   streak: number;
   followers: number;
   following: number;
@@ -33,59 +24,57 @@ export interface UserProfile {
 }
 
 /**
- * Referencia a la colección "users"
+ * Referencia a la ruta "users"
  */
-const usersCollection = collection(db, "users");
+const usersRef = ref(database, "users");
 
 /**
  * Lista todos los usuarios
  */
-export async function listarUsuarios(): Promise<UserProfile[]> {
-  const snap: QuerySnapshot<DocumentData> = await getDocs(usersCollection);
-  return snap.docs.map((d) => ({
-    id: d.id,
-    ...(d.data() as Omit<UserProfile, "id">),
-  }));
+export async function listarUsuarios(): Promise<{
+  [uid: string]: UserProfile;
+}> {
+  const snapshot = await get(usersRef);
+  if (!snapshot.exists()) return {};
+  return snapshot.val(); // Devuelve un objeto con uid como clave y UserProfile como valor
 }
 
 /**
- * Obtiene un usuario por ID
+ * Obtiene un usuario por uid
  */
 export async function obtenerUsuario(uid: string): Promise<UserProfile | null> {
-  const ref = doc(db, "users", uid);
-  const snap: DocumentSnapshot<DocumentData> = await getDoc(ref);
-  if (!snap.exists()) return null;
-  return {
-    id: snap.id,
-    ...(snap.data() as Omit<UserProfile, "id">),
-  };
+  const userRef = ref(database, `users/${uid}`);
+  const snapshot = await get(userRef);
+  if (!snapshot.exists()) return null;
+  return snapshot.val() as UserProfile;
 }
 
 /**
- * Crea un nuevo usuario
+ * Crea o sobreescribe un usuario
  */
 export async function crearUsuario(
-  data: Omit<UserProfile, "id">
-): Promise<string> {
-  const docRef = await addDoc(usersCollection, data);
-  return docRef.id;
+  uid: string,
+  data: UserProfile
+): Promise<void> {
+  const userRef = ref(database, `users/${uid}`);
+  await set(userRef, data);
 }
 
 /**
- * Actualiza un usuario existente
+ * Actualiza un usuario parcialmente (solo las claves que pases)
  */
 export async function actualizarUsuario(
   uid: string,
-  data: Partial<Omit<UserProfile, "id">>
+  data: Partial<UserProfile>
 ): Promise<void> {
-  const ref = doc(db, "users", uid);
-  await updateDoc(ref, data);
+  const userRef = ref(database, `users/${uid}`);
+  await update(userRef, data);
 }
 
 /**
  * Elimina un usuario
  */
 export async function eliminarUsuario(uid: string): Promise<void> {
-  const ref = doc(db, "users", uid);
-  await deleteDoc(ref);
+  const userRef = ref(database, `users/${uid}`);
+  await remove(userRef);
 }
