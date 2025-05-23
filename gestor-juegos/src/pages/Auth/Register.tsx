@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from "react";
+import React, { useState, useRef, useCallback, useEffect } from "react";
 import {
   Camera,
   Upload,
@@ -16,6 +16,10 @@ import {
   EyeOff,
   Move,
 } from "lucide-react";
+import { createUserWithEmailAndPassword } from "firebase/auth";
+import { set, ref } from "firebase/database";
+import { auth, database } from "../../firebase/config";
+import { useNavigate } from "react-router-dom";
 
 interface UserDoc {
   username: string;
@@ -40,7 +44,6 @@ export default function Register() {
 
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
-  const [redirecting, setRedirecting] = useState(false); // ✅ Estado faltante agregado
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -54,91 +57,38 @@ export default function Register() {
   const [rotation, setRotation] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
-  const [avatarFile, setAvatarFile] = useState<File | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const imageRef = useRef<HTMLImageElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const navigate = useNavigate();
 
-  // Lista de juegos populares para sugerencias
+  // Lista de juegos populares
   const popularGames = [
     "League of Legends",
+    "Dota 2",
     "Valorant",
-    "Fortnite",
+    "Counter-Strike 2",
     "Call of Duty",
-    "Minecraft",
-    "Among Us",
-    "Rocket League",
     "Apex Legends",
-    "Counter-Strike",
-    "Overwatch",
-    "FIFA",
-    "Fall Guys",
-    "Genshin Impact",
+    "Overwatch 2",
+    "Fortnite",
+    "PUBG",
     "World of Warcraft",
+    "Final Fantasy XIV",
+    "Minecraft",
+    "Terraria",
+    "FIFA",
+    "NBA 2K",
+    "Rocket League",
+    "Among Us",
+    "Stardew Valley",
+    "Genshin Impact",
     "Grand Theft Auto",
-  ];
+    "Red Dead Redemption",
+  ].sort();
 
-  // Funciones de interacción con imagen
-  const handleMouseDown = (e: React.MouseEvent) => {
-    console.log("Mouse down", e.clientX, e.clientY);
-  };
-
-  const handleMouseMove = (e: React.MouseEvent) => {
-    console.log("Mouse move", e.clientX, e.clientY);
-  };
-
-  const handleMouseUp = (e: React.MouseEvent) => {
-    console.log("Mouse up");
-  };
-
-  const handleTouchStart = (e: React.TouchEvent) => {
-    console.log("Touch start");
-  };
-
-  const handleTouchMove = (e: React.TouchEvent) => {
-    console.log("Touch move");
-  };
-
-  const handleTouchEnd = (e: React.TouchEvent) => {
-    console.log("Touch end");
-  };
-
-  const handleZoomChange = (newZoom: number) => {
-    console.log("Zoom:", newZoom);
-    setZoom(newZoom);
-  };
-
-  const handleRotationChange = (newRotation: number) => {
-    console.log("Rotation:", newRotation);
-    setRotation(newRotation);
-  };
-
-  const resetImageEditor = () => {
-    console.log("Reset editor");
-    setZoom(1);
-    setRotation(0);
-  };
-
-  const applyImageEdits = () => {
-    console.log("Apply edits");
-    // Aquí puedes procesar la imagen editada
-  };
-
-  // ✅ Función corregida para navegación
-  const navigateToDashboard = () => {
-    setRedirecting(true);
-    // Simular navegación (en una app real usarías React Router)
-    setTimeout(() => {
-      console.log("Navegando a dashboard/perfil...");
-      alert(
-        "Redirigiendo al dashboard...\n(En una aplicación real esto navegaría a /dashboard/perfil)"
-      );
-      setRedirecting(false);
-    }, 1500);
-  };
-
-  // ✅ Función de manejo de cambios mejorada
+  // Manejo de cambios en el formulario
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
 
@@ -159,74 +109,99 @@ export default function Register() {
     }
   };
 
-  // ✅ Función de manejo de archivos mejorada
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    // Validar tamaño del archivo (max 5MB)
+  // Validación de archivos de imagen
+  const validateImageFile = async (file: File): Promise<string | null> => {
+    // Validar tamaño (max 5MB)
     if (file.size > 5 * 1024 * 1024) {
-      setErrors((prev) => ({
-        ...prev,
-        avatar: "La imagen debe ser menor a 5MB",
-      }));
-      return;
+      return "La imagen debe ser menor a 5MB";
     }
 
     // Validar tipo de archivo
-    if (!file.type.startsWith("image/")) {
-      setErrors((prev) => ({
-        ...prev,
-        avatar: "Solo se permiten archivos de imagen",
-      }));
-      return;
+    const validTypes = [
+      "image/jpeg",
+      "image/jpg",
+      "image/png",
+      "image/webp",
+      "image/gif",
+    ];
+
+    if (!validTypes.includes(file.type.toLowerCase())) {
+      return "Formato no soportado. Usa JPG, PNG, WEBP o GIF";
     }
 
-    setAvatarFile(file);
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const imageUrl = event.target?.result as string;
-      if (imageUrl) {
+    return null;
+  };
+
+  // Manejo de carga de archivos
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setErrors((prev) => ({ ...prev, avatar: "" }));
+
+    try {
+      const validationError = await validateImageFile(file);
+      if (validationError) {
+        setErrors((prev) => ({ ...prev, avatar: validationError }));
+        if (fileInputRef.current) fileInputRef.current.value = "";
+        return;
+      }
+
+      const imageUrl = URL.createObjectURL(file);
+      const img = new Image();
+
+      img.onload = () => {
         setOriginalImage(imageUrl);
         setShowImageEditor(true);
         // Resetear estados del editor
         setCrop({ x: 0, y: 0 });
         setZoom(1);
         setRotation(0);
-        setErrors((prev) => ({ ...prev, avatar: "" }));
-      }
-    };
-    reader.onerror = () => {
+      };
+
+      img.onerror = () => {
+        URL.revokeObjectURL(imageUrl);
+        setErrors((prev) => ({
+          ...prev,
+          avatar: "Error al cargar la imagen. Intenta con otra.",
+        }));
+        if (fileInputRef.current) fileInputRef.current.value = "";
+      };
+
+      img.src = imageUrl;
+    } catch (error) {
+      console.error("Error processing file:", error);
       setErrors((prev) => ({
         ...prev,
-        avatar: "Error al leer el archivo",
+        avatar: "Error al procesar el archivo",
       }));
-    };
-    reader.readAsDataURL(file);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
   };
 
-  // ✅ Función de validación mejorada
+  // Validación del formulario
   const validateForm = () => {
     const newErrors: { [key: string]: string } = {};
 
     // Validar username
-    if (!formData.username.trim()) {
+    const username = formData.username.trim();
+    if (!username) {
       newErrors.username = "Nombre de usuario requerido";
-    } else if (formData.username.trim().length < 3) {
+    } else if (username.length < 3) {
       newErrors.username =
         "El nombre de usuario debe tener al menos 3 caracteres";
-    } else if (formData.username.trim().length > 20) {
+    } else if (username.length > 20) {
       newErrors.username =
         "El nombre de usuario no puede exceder 20 caracteres";
-    } else if (!/^[a-zA-Z0-9_]+$/.test(formData.username.trim())) {
+    } else if (!/^[a-zA-Z0-9_]+$/.test(username)) {
       newErrors.username = "Solo se permiten letras, números y guiones bajos";
     }
 
     // Validar email
-    const emailTrimmed = formData.email.trim();
-    if (!emailTrimmed) {
+    const email = formData.email.trim().toLowerCase();
+    if (!email) {
       newErrors.email = "Email requerido";
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailTrimmed)) {
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       newErrors.email = "Email inválido";
     }
 
@@ -245,11 +220,23 @@ export default function Register() {
       newErrors.confirmPassword = "Las contraseñas no coinciden";
     }
 
+    // Validar juegos favoritos
+    const validGames = formData.favoriteGames.filter(
+      (game) => game.trim() !== ""
+    );
+    const duplicateGames = validGames.filter(
+      (game, index, arr) => arr.indexOf(game) !== index
+    );
+
+    if (duplicateGames.length > 0) {
+      newErrors.favoriteGames = "No puedes repetir el mismo juego favorito";
+    }
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
-  // ✅ Función de envío mejorada
+  // Manejo del envío del formulario
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!validateForm()) return;
@@ -259,58 +246,202 @@ export default function Register() {
     setSuccess(false);
 
     try {
-      // Simular proceso de registro
-      await new Promise((resolve) => setTimeout(resolve, 2000));
+      // Crear cuenta en Firebase Authentication
+      const userCredential = await createUserWithEmailAndPassword(
+        auth,
+        formData.email.trim().toLowerCase(),
+        formData.password
+      );
 
-      // Crear datos del usuario
+      const uid = userCredential.user.uid;
+
+      // Crear objeto de usuario
       const userData: UserDoc = {
         username: formData.username.trim(),
-        email: formData.email.trim(),
-        avatar: editedImage || "",
+        email: formData.email.trim().toLowerCase(),
+        avatar: editedImage || formData.avatar || "",
         timezone: formData.timezone,
         favoriteGames: formData.favoriteGames.filter(
           (game) => game.trim() !== ""
         ),
         createdAt: new Date().toISOString(),
-        uid: `user_${Date.now()}`, // Simular UID
+        uid,
       };
 
-      console.log("Usuario registrado exitosamente:", userData);
+      // Guardar en Firebase Realtime Database
+      await set(ref(database, `users/${uid}`), userData);
+
+      console.log("Usuario registrado:", userData);
       setSuccess(true);
 
-      // Limpiar datos sensibles
+      // Limpiar contraseñas del formulario
       setFormData((prev) => ({
         ...prev,
         password: "",
         confirmPassword: "",
       }));
-
-      // Opcional: navegar al dashboard después del registro exitoso
-      setTimeout(() => {
-        navigateToDashboard();
-      }, 2000);
     } catch (error: any) {
       console.error("Error en el registro:", error);
-      setErrors({ general: "Error en el registro. Inténtalo de nuevo." });
+      setErrors({
+        general:
+          error?.message || "Error inesperado. Por favor, intenta de nuevo.",
+      });
     } finally {
       setLoading(false);
     }
+    navigate("/dashboard");
   };
 
-  // ✅ Función para remover avatar mejorada
+  // Remover avatar
   const removeAvatar = () => {
+    if (originalImage && originalImage.startsWith("blob:")) {
+      URL.revokeObjectURL(originalImage);
+    }
+
     setEditedImage(null);
     setOriginalImage(null);
-    setAvatarFile(null);
     setFormData((prev) => ({ ...prev, avatar: "" }));
+
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
     }
-    // Limpiar errores relacionados con avatar
-    if (errors.avatar) {
-      setErrors((prev) => ({ ...prev, avatar: "" }));
-    }
   };
+
+  // Manejo del drag de la imagen
+  const handleMouseDown = useCallback(
+    (e: React.MouseEvent) => {
+      if (!containerRef.current) return;
+      e.preventDefault();
+
+      const rect = containerRef.current.getBoundingClientRect();
+      setIsDragging(true);
+      setDragStart({
+        x: e.clientX - rect.left - crop.x,
+        y: e.clientY - rect.top - crop.y,
+      });
+    },
+    [crop]
+  );
+
+  const handleMouseMove = useCallback(
+    (e: React.MouseEvent) => {
+      if (!isDragging || !containerRef.current) return;
+      e.preventDefault();
+
+      const rect = containerRef.current.getBoundingClientRect();
+      setCrop({
+        x: e.clientX - rect.left - dragStart.x,
+        y: e.clientY - rect.top - dragStart.y,
+      });
+    },
+    [isDragging, dragStart]
+  );
+
+  const handleMouseUp = useCallback(() => {
+    setIsDragging(false);
+  }, []);
+
+  const handleTouchStart = useCallback(
+    (e: React.TouchEvent) => {
+      if (!containerRef.current) return;
+      e.preventDefault();
+
+      const touch = e.touches[0];
+      const rect = containerRef.current.getBoundingClientRect();
+      setIsDragging(true);
+      setDragStart({
+        x: touch.clientX - rect.left - crop.x,
+        y: touch.clientY - rect.top - crop.y,
+      });
+    },
+    [crop]
+  );
+
+  const handleTouchMove = useCallback(
+    (e: React.TouchEvent) => {
+      if (!isDragging || !containerRef.current) return;
+      e.preventDefault();
+
+      const touch = e.touches[0];
+      const rect = containerRef.current.getBoundingClientRect();
+      setCrop({
+        x: touch.clientX - rect.left - dragStart.x,
+        y: touch.clientY - rect.top - dragStart.y,
+      });
+    },
+    [isDragging, dragStart]
+  );
+
+  // Aplicar edición de imagen
+  const applyImageEdits = () => {
+    if (!originalImage || !canvasRef.current) return;
+
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    // Configurar canvas para imagen circular de 200x200
+    canvas.width = 200;
+    canvas.height = 200;
+
+    const img = new Image();
+    img.onload = () => {
+      ctx.save();
+
+      // Crear máscara circular
+      ctx.beginPath();
+      ctx.arc(100, 100, 100, 0, Math.PI * 2);
+      ctx.closePath();
+      ctx.clip();
+
+      // Limpiar canvas
+      ctx.clearRect(0, 0, 200, 200);
+
+      // Aplicar transformaciones
+      ctx.translate(100, 100);
+      ctx.rotate((rotation * Math.PI) / 180);
+      ctx.scale(zoom, zoom);
+      ctx.translate(-100 + crop.x, -100 + crop.y);
+
+      // Dibujar imagen
+      const scale = Math.max(200 / img.width, 200 / img.height) * 1.5;
+      const width = img.width * scale;
+      const height = img.height * scale;
+      ctx.drawImage(img, -width / 2 + 100, -height / 2 + 100, width, height);
+
+      ctx.restore();
+
+      // Convertir a base64
+      const dataUrl = canvas.toDataURL("image/jpeg", 0.9);
+      setEditedImage(dataUrl);
+      setFormData((prev) => ({ ...prev, avatar: dataUrl }));
+      setShowImageEditor(false);
+    };
+
+    img.src = originalImage;
+  };
+
+  // Cleanup
+  useEffect(() => {
+    return () => {
+      if (originalImage && originalImage.startsWith("blob:")) {
+        URL.revokeObjectURL(originalImage);
+      }
+    };
+  }, [originalImage]);
+
+  // Event listeners para mouse
+  useEffect(() => {
+    if (isDragging) {
+      window.addEventListener("mousemove", handleMouseMove as any);
+      window.addEventListener("mouseup", handleMouseUp);
+
+      return () => {
+        window.removeEventListener("mousemove", handleMouseMove as any);
+        window.removeEventListener("mouseup", handleMouseUp);
+      };
+    }
+  }, [isDragging, handleMouseMove, handleMouseUp]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex flex-col items-center justify-center p-4">
@@ -525,57 +656,108 @@ export default function Register() {
                     onChange={handleChange}
                     placeholder={`Juego favorito ${index + 1}`}
                     list={`games-list-${index}`}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
+                    className={`w-full px-4 py-2 border rounded-lg text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors ${
+                      errors[`favoriteGame-${index}`]
+                        ? "border-red-500 bg-red-50"
+                        : "border-gray-300"
+                    }`}
+                    maxLength={50}
                   />
                   <datalist id={`games-list-${index}`}>
                     {popularGames.map((popularGame) => (
                       <option key={popularGame} value={popularGame} />
                     ))}
                   </datalist>
+                  {game.trim() && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const newGames = [...formData.favoriteGames];
+                        newGames[index] = "";
+                        setFormData((prev) => ({
+                          ...prev,
+                          favoriteGames: newGames,
+                        }));
+                      }}
+                      className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-red-500 transition-colors"
+                    >
+                      <X size={16} />
+                    </button>
+                  )}
                 </div>
               ))}
             </div>
-            <p className="text-sm text-gray-500 mt-2">
-              Puedes escribir o seleccionar de las sugerencias
-            </p>
+
+            {/* Contador de juegos */}
+            <div className="flex justify-between items-center mt-2">
+              <p className="text-sm text-gray-500">
+                Puedes escribir o seleccionar de las sugerencias
+              </p>
+              <p className="text-xs text-gray-400">
+                {formData.favoriteGames.filter((g) => g.trim()).length}/5 juegos
+              </p>
+            </div>
+
+            {errors.favoriteGames && (
+              <p className="text-red-500 text-sm mt-2">
+                {errors.favoriteGames}
+              </p>
+            )}
           </div>
 
+          {/* Submit Button */}
           <button
             type="submit"
-            disabled={loading || redirecting}
-            className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-3 px-4 rounded-lg hover:from-blue-700 hover:to-indigo-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 font-medium shadow-lg"
+            disabled={loading}
+            className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-3 px-4 rounded-lg hover:from-blue-700 hover:to-indigo-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 font-medium shadow-lg transform hover:scale-[1.02] active:scale-[0.98]"
           >
             {loading ? (
               <div className="flex items-center justify-center space-x-2">
                 <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                <span>Registrando...</span>
-              </div>
-            ) : redirecting ? (
-              <div className="flex items-center justify-center space-x-2">
-                <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                <span>Redirigiendo...</span>
+                <span>Creando cuenta...</span>
               </div>
             ) : (
-              "Crear Cuenta"
+              <span className="flex items-center justify-center">
+                <User size={18} className="mr-2" />
+                Crear Cuenta
+              </span>
             )}
           </button>
 
+          {/* Success Message */}
           {success && (
-            <div className="p-4 bg-green-100 text-green-700 rounded-lg text-center border border-green-200">
-              <Check size={20} className="inline mr-2" />
-              ¡Registro exitoso! Bienvenido a la comunidad.
+            <div className="p-4 bg-gradient-to-r from-green-100 to-emerald-100 text-green-800 rounded-lg text-center border border-green-200 shadow-sm">
+              <div className="flex items-center justify-center mb-2">
+                <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center mr-3">
+                  <Check size={18} className="text-white" />
+                </div>
+                <h4 className="font-semibold">¡Registro Exitoso!</h4>
+              </div>
+              <p className="text-sm">
+                Tu cuenta ha sido creada exitosamente. ¡Bienvenido!
+              </p>
             </div>
           )}
 
+          {/* Error Message */}
           {errors.general && (
-            <div className="p-4 bg-red-100 text-red-700 rounded-lg text-center border border-red-200">
-              {errors.general}
+            <div className="p-4 bg-gradient-to-r from-red-100 to-pink-100 text-red-800 rounded-lg border border-red-200 shadow-sm">
+              <div className="flex items-center justify-center mb-2">
+                <div className="w-6 h-6 bg-red-500 rounded-full flex items-center justify-center mr-2">
+                  <X size={14} className="text-white" />
+                </div>
+                <h4 className="font-semibold">Error en el registro</h4>
+              </div>
+              <p className="text-sm text-center">{errors.general}</p>
             </div>
           )}
         </form>
       </div>
 
-      {/* ✅ Editor de Imagen Completo - IMPLEMENTADO */}
+      {/* Canvas oculto para procesamiento de imagen */}
+      <canvas ref={canvasRef} style={{ display: "none" }} />
+
+      {/* Editor de Imagen */}
       {showImageEditor && originalImage && (
         <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
@@ -599,11 +781,10 @@ export default function Register() {
               onMouseLeave={handleMouseUp}
               onTouchStart={handleTouchStart}
               onTouchMove={handleTouchMove}
-              onTouchEnd={handleTouchEnd}
+              onTouchEnd={handleMouseUp}
             >
               {/* Imagen */}
               <img
-                ref={imageRef}
                 src={originalImage}
                 alt="Preview"
                 className="absolute top-1/2 left-1/2 max-w-none pointer-events-none select-none"
@@ -611,19 +792,13 @@ export default function Register() {
                   transform: `translate(-50%, -50%) translate(${crop.x}px, ${crop.y}px) scale(${zoom}) rotate(${rotation}deg)`,
                   transformOrigin: "center",
                   transition: isDragging ? "none" : "transform 0.1s ease-out",
-                  width: "auto",
-                  height: "auto",
-                  maxWidth: "none",
-                  maxHeight: "none",
                 }}
                 draggable={false}
               />
 
               {/* Overlay de recorte circular */}
               <div className="absolute inset-0 pointer-events-none">
-                {/* Fondo semitranscurente */}
                 <div className="absolute inset-0 bg-black bg-opacity-40"></div>
-                {/* Círculo de recorte */}
                 <div
                   className="absolute border-4 border-white rounded-full shadow-lg bg-transparent"
                   style={{
@@ -635,15 +810,6 @@ export default function Register() {
                     boxShadow: "0 0 0 9999px rgba(0, 0, 0, 0.4)",
                   }}
                 ></div>
-                {/* Indicador central */}
-                <div
-                  className="absolute w-2 h-2 bg-white rounded-full"
-                  style={{
-                    top: "50%",
-                    left: "50%",
-                    transform: "translate(-50%, -50%)",
-                  }}
-                ></div>
               </div>
             </div>
 
@@ -653,8 +819,7 @@ export default function Register() {
                 <Move size={16} className="mr-2 flex-shrink-0" />
                 <span>
                   Arrastra la imagen para posicionarla. Usa los controles para
-                  ajustar el zoom y rotación. El área circular será tu avatar
-                  final.
+                  ajustar el zoom y rotación.
                 </span>
               </div>
             </div>
@@ -663,28 +828,32 @@ export default function Register() {
             <div className="flex flex-wrap justify-center gap-2 mb-4">
               <button
                 type="button"
-                onClick={() => handleZoomChange(zoom - 0.1)}
+                onClick={() => setZoom(Math.max(0.5, zoom - 0.1))}
                 className="px-3 py-2 bg-gray-600 text-white text-sm rounded-lg hover:bg-gray-700 transition-colors flex items-center"
               >
                 <ZoomOut size={14} className="mr-1" /> Zoom -
               </button>
               <button
                 type="button"
-                onClick={() => handleZoomChange(zoom + 0.1)}
+                onClick={() => setZoom(Math.min(3, zoom + 0.1))}
                 className="px-3 py-2 bg-gray-600 text-white text-sm rounded-lg hover:bg-gray-700 transition-colors flex items-center"
               >
                 <ZoomIn size={14} className="mr-1" /> Zoom +
               </button>
               <button
                 type="button"
-                onClick={() => handleRotationChange(rotation + 90)}
+                onClick={() => setRotation((rotation + 90) % 360)}
                 className="px-3 py-2 bg-gray-600 text-white text-sm rounded-lg hover:bg-gray-700 transition-colors flex items-center"
               >
                 <RotateCw size={14} className="mr-1" /> Rotar
               </button>
               <button
                 type="button"
-                onClick={resetImageEditor}
+                onClick={() => {
+                  setCrop({ x: 0, y: 0 });
+                  setZoom(1);
+                  setRotation(0);
+                }}
                 className="px-3 py-2 bg-gray-600 text-white text-sm rounded-lg hover:bg-gray-700 transition-colors"
               >
                 Reiniciar
@@ -703,8 +872,8 @@ export default function Register() {
                   max="3"
                   step="0.05"
                   value={zoom}
-                  onChange={(e) => handleZoomChange(parseFloat(e.target.value))}
-                  className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider"
+                  onChange={(e) => setZoom(parseFloat(e.target.value))}
+                  className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
                 />
               </div>
               <div>
@@ -717,10 +886,8 @@ export default function Register() {
                   max="360"
                   step="1"
                   value={rotation}
-                  onChange={(e) =>
-                    handleRotationChange(parseInt(e.target.value))
-                  }
-                  className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider"
+                  onChange={(e) => setRotation(parseInt(e.target.value))}
+                  className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
                 />
               </div>
             </div>
