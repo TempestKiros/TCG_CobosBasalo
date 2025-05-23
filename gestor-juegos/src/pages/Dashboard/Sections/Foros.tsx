@@ -1,28 +1,20 @@
-// src/pages/Dashboard/Sections/Anuncios.tsx
 import React from "react";
 
-const Foros: React.FC = () => {
+export const ForosSection: React.FC = () => {
   return (
-    <div>
-      <h2>Noticias y Ofertas</h2>
-      <div style={{ display: "flex", gap: "2rem" }}>
-        <div>
-          <h4>Noticias</h4>
-          <ul>
-            <li>Se anuncia GTA VI para 2025.</li>
-            <li>Nueva expansión de Elden Ring revelada.</li>
-          </ul>
-        </div>
-        <div>
-          <h4>Ofertas</h4>
-          <ul>
-            <li>Steam: -50% en Red Dead Redemption 2</li>
-            <li>Epic: Assassin's Creed gratis esta semana</li>
-          </ul>
-        </div>
+    <div style={{ padding: "1rem" }}>
+      <h2 className="text-2xl font-bold mb-4">Foros</h2>
+      <p className="text-gray-700">
+        ¡Bienvenido a la sección de foros! Aquí podrás debatir, compartir ideas
+        y participar con otros jugadores.
+      </p>
+      <div className="mt-4">
+        <ul className="list-disc pl-6 text-gray-600">
+          <li>💬 Discusiones generales</li>
+          <li>🎮 Sugerencias de juegos</li>
+          <li>🛠 Reportes y soporte</li>
+        </ul>
       </div>
     </div>
   );
 };
-
-export default Foros;

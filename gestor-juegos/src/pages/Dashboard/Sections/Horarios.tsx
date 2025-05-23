@@ -33,7 +33,7 @@ interface HorariosSectionProps {
   onHorarioCreated?: (horario: Horario) => void;
 }
 
-const HorariosSection: React.FC<HorariosSectionProps> = ({
+export const HorariosSection: React.FC<HorariosSectionProps> = ({
   data,
   user,
   onHorarioCreated,
@@ -541,5 +541,3 @@ const HorariosSection: React.FC<HorariosSectionProps> = ({
     </div>
   );
 };
-
-export default HorariosSection;

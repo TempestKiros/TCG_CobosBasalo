@@ -16,7 +16,7 @@ interface UserData {
   status?: string;
 }
 
-const Perfil: React.FC<PerfilProps> = ({ user }) => {
+export const Perfil: React.FC<PerfilProps> = ({ user }) => {
   const [userData, setUserData] = useState<UserData | null>(null);
   const [description, setDescription] = useState<string>("");
   const [editingDescription, setEditingDescription] = useState(false);
@@ -535,5 +535,3 @@ const Perfil: React.FC<PerfilProps> = ({ user }) => {
     </div>
   );
 };
-
-export default Perfil;

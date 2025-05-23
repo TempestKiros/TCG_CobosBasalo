@@ -44,7 +44,7 @@ interface DatosUsuarioJuego {
 }
 
 // Base de datos mock de juegos
-const juegosBaseDatos: Juego[] = [
+export const juegosBaseDatos: Juego[] = [
   {
     id: "hollow_knight",
     nombre: "Hollow Knight",
@@ -167,7 +167,7 @@ const juegosBaseDatos: Juego[] = [
   },
 ];
 
-const Juegos: React.FC = () => {
+export const Juegos: React.FC = () => {
   const [user, loading] = useAuthState(auth);
   const [juegos] = useState<Juego[]>(juegosBaseDatos);
   const [juegosFiltrados, setJuegosFiltrados] =
@@ -611,5 +611,3 @@ const Juegos: React.FC = () => {
     </div>
   );
 };
-
-export default Juegos;

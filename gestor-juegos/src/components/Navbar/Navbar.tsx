@@ -6,7 +6,7 @@ export type Section =
   | "horarios"
   | "juegos"
   | "anuncios"
-  | "Foros"
+  | "foros"
   | "ajustes";
 
 interface NavbarProps {
@@ -20,7 +20,7 @@ const Navbar: React.FC<NavbarProps> = ({ onSelect, active }) => {
     "horarios",
     "juegos",
     "anuncios",
-    "Foros",
+    "foros",
     "ajustes",
   ];
 
