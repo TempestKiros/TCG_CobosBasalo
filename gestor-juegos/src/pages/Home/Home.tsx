@@ -1,11 +1,22 @@
-// src/pages/Home/Home.tsx
+// src/pages/Home/Home.tsx - Versión actualizada con configuración global
 import React, { useMemo, useEffect, useState } from "react";
 import Slider from "react-slick";
 import Lottie from "lottie-react";
 import { useNavigate } from "react-router-dom";
 import { motion, useScroll, useTransform } from "framer-motion";
+import { useTheme } from "../../hooks/useTheme";
 import sharkAnimation from "../../assets/shark-swimming.json";
 import { images } from "../../assets/games/gameImages";
+
+// Tipo para las partículas
+interface Particle {
+  id: number;
+  x: number;
+  y: number;
+  size: number;
+  duration: number;
+  delay: number;
+}
 
 const sliderSettings = {
   infinite: true,
@@ -19,19 +30,10 @@ const sliderSettings = {
   pauseOnHover: false,
 };
 
-// Tipo para las partículas
-interface Particle {
-  id: number;
-  x: number;
-  y: number;
-  size: number;
-  duration: number;
-  delay: number;
-}
-
 // Componente de partículas flotantes
 const FloatingParticles = () => {
   const [particles, setParticles] = useState<Particle[]>([]);
+  const { theme } = useTheme();
 
   useEffect(() => {
     const newParticles: Particle[] = Array.from({ length: 50 }, (_, i) => ({
@@ -45,12 +47,24 @@ const FloatingParticles = () => {
     setParticles(newParticles);
   }, []);
 
+  // Colores de partículas según el tema
+  const getParticleColor = () => {
+    switch (theme) {
+      case "light":
+        return "from-blue-400/30 to-purple-400/30";
+      case "purple":
+        return "from-purple-400/30 to-pink-400/30";
+      default:
+        return "from-cyan-400/20 to-purple-400/20";
+    }
+  };
+
   return (
     <div className="fixed inset-0 pointer-events-none z-0">
       {particles.map((particle) => (
         <motion.div
           key={particle.id}
-          className="absolute rounded-full bg-gradient-to-r from-cyan-400/20 to-purple-400/20"
+          className={`absolute rounded-full bg-gradient-to-r ${getParticleColor()}`}
           style={{
             left: `${particle.x}%`,
             top: `${particle.y}%`,
@@ -74,9 +88,10 @@ const FloatingParticles = () => {
   );
 };
 
-// Fondo animado mejorado con efectos de glassmorphism
+// Fondo animado mejorado con efectos adaptativos al tema
 const AnimatedBackground = () => {
   const { scrollY } = useScroll();
+  const { theme } = useTheme();
   const y1 = useTransform(scrollY, [0, 500], [0, 150]);
   const y2 = useTransform(scrollY, [0, 500], [0, -150]);
 
@@ -101,15 +116,54 @@ const AnimatedBackground = () => {
       }));
   }, []);
 
+  // Gradientes de fondo según el tema
+  const getBackgroundGradient = () => {
+    switch (theme) {
+      case "light":
+        return "bg-gradient-to-br from-gray-100 via-blue-50 to-gray-100";
+      case "purple":
+        return "bg-gradient-to-br from-purple-900 via-purple-800 to-purple-900";
+      default:
+        return "bg-gradient-to-br from-slate-900 via-purple-900/20 to-slate-900";
+    }
+  };
+
+  // Colores de efectos de luz según el tema
+  const getLightEffects = () => {
+    switch (theme) {
+      case "light":
+        return {
+          light1: "bg-blue-400/20",
+          light2: "bg-purple-400/20",
+        };
+      case "purple":
+        return {
+          light1: "bg-purple-400/20",
+          light2: "bg-pink-400/20",
+        };
+      default:
+        return {
+          light1: "bg-cyan-500/10",
+          light2: "bg-purple-500/10",
+        };
+    }
+  };
+
+  const lightEffects = getLightEffects();
+
   return (
     <>
-      {/* Gradiente base mejorado */}
-      <div className="fixed inset-0 bg-gradient-to-br from-slate-900 via-purple-900/20 to-slate-900" />
+      {/* Gradiente base adaptativo */}
+      <div className={`fixed inset-0 ${getBackgroundGradient()}`} />
 
       {/* Efectos de luz ambiental */}
       <motion.div className="fixed inset-0 opacity-30" style={{ y: y1 }}>
-        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-cyan-500/10 rounded-full blur-3xl" />
-        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl" />
+        <div
+          className={`absolute top-1/4 left-1/4 w-96 h-96 ${lightEffects.light1} rounded-full blur-3xl`}
+        />
+        <div
+          className={`absolute bottom-1/4 right-1/4 w-96 h-96 ${lightEffects.light2} rounded-full blur-3xl`}
+        />
       </motion.div>
 
       {/* Líneas animadas */}
@@ -125,17 +179,23 @@ const AnimatedBackground = () => {
             >
               <stop
                 offset="0%"
-                stopColor="rgb(34, 211, 238)"
+                stopColor={
+                  theme === "light" ? "rgb(59, 130, 246)" : "rgb(34, 211, 238)"
+                }
                 stopOpacity="0.8"
               />
               <stop
                 offset="50%"
-                stopColor="rgb(168, 85, 247)"
+                stopColor={
+                  theme === "purple" ? "rgb(236, 72, 153)" : "rgb(168, 85, 247)"
+                }
                 stopOpacity="0.4"
               />
               <stop
                 offset="100%"
-                stopColor="rgb(34, 211, 238)"
+                stopColor={
+                  theme === "light" ? "rgb(59, 130, 246)" : "rgb(34, 211, 238)"
+                }
                 stopOpacity="0.8"
               />
             </linearGradient>
@@ -167,34 +227,112 @@ const AnimatedBackground = () => {
 };
 
 // Componente de carousel mejorado
-const GameCarousel = ({ side }: { side: "left" | "right" }) => (
-  <div className="hidden lg:block w-[180px] h-screen overflow-hidden relative">
-    {/* Efecto de máscara degradada */}
-    <div
-      className={`absolute inset-0 z-10 bg-gradient-to-${
-        side === "left" ? "r" : "l"
-      } from-slate-900 via-transparent to-transparent`}
-    />
+const GameCarousel = ({ side }: { side: "left" | "right" }) => {
+  const { theme } = useTheme();
 
-    <div className="opacity-40 hover:opacity-60 transition-opacity duration-500">
-      <Slider {...sliderSettings}>
-        {images.map((src, idx) => (
-          <div key={idx} className="relative group">
-            <img
-              src={src}
-              alt={`Juego ${idx + 1}`}
-              className="w-full h-screen object-cover saturate-0 group-hover:saturate-100 transition-all duration-700 transform group-hover:scale-105"
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-          </div>
-        ))}
-      </Slider>
+  const getMaskGradient = () => {
+    const direction = side === "left" ? "r" : "l";
+    switch (theme) {
+      case "light":
+        return `bg-gradient-to-${direction} from-gray-100 via-transparent to-transparent`;
+      case "purple":
+        return `bg-gradient-to-${direction} from-purple-900 via-transparent to-transparent`;
+      default:
+        return `bg-gradient-to-${direction} from-slate-900 via-transparent to-transparent`;
+    }
+  };
+
+  return (
+    <div className="hidden lg:block w-[180px] h-screen overflow-hidden relative">
+      {/* Efecto de máscara degradada adaptativa */}
+      <div className={`absolute inset-0 z-10 ${getMaskGradient()}`} />
+
+      <div className="opacity-40 hover:opacity-60 transition-opacity duration-500">
+        <Slider {...sliderSettings}>
+          {images.map((src, idx) => (
+            <div key={idx} className="relative group">
+              <img
+                src={src}
+                alt={`Juego ${idx + 1}`}
+                className="w-full h-screen object-cover saturate-0 group-hover:saturate-100 transition-all duration-700 transform group-hover:scale-105"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+            </div>
+          ))}
+        </Slider>
+      </div>
     </div>
-  </div>
-);
+  );
+};
 
 export const Home: React.FC = () => {
   const navigate = useNavigate();
+  const { theme } = useTheme();
+
+  // Define themeClasses locally since useTheme does not provide it
+  const themeClasses = useMemo(() => {
+    switch (theme) {
+      case "light":
+        return {
+          text: "text-gray-900",
+          textSecondary: "text-gray-500",
+          cardBg: "bg-white/80",
+          borderColor: "border-gray-300",
+          hover: "hover:bg-gray-100",
+        };
+      case "purple":
+        return {
+          text: "text-purple-100",
+          textSecondary: "text-purple-300",
+          cardBg: "bg-purple-900/80",
+          borderColor: "border-purple-700",
+          hover: "hover:bg-purple-800",
+        };
+      default:
+        return {
+          text: "text-slate-100",
+          textSecondary: "text-slate-400",
+          cardBg: "bg-slate-900/80",
+          borderColor: "border-slate-700",
+          hover: "hover:bg-slate-800",
+        };
+    }
+  }, [theme]);
+
+  // Colores de botones según el tema
+  const getButtonColors = () => {
+    switch (theme) {
+      case "light":
+        return {
+          primary:
+            "from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-600",
+          secondary:
+            "from-purple-600 to-purple-700 hover:from-purple-500 hover:to-purple-600",
+          shadow1: "rgba(59, 130, 246, 0.4)",
+          shadow2: "rgba(168, 85, 247, 0.4)",
+        };
+      case "purple":
+        return {
+          primary:
+            "from-purple-600 to-purple-700 hover:from-purple-500 hover:to-purple-600",
+          secondary:
+            "from-pink-600 to-pink-700 hover:from-pink-500 hover:to-pink-600",
+          shadow1: "rgba(168, 85, 247, 0.4)",
+          shadow2: "rgba(236, 72, 153, 0.4)",
+        };
+      default:
+        return {
+          primary:
+            "from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500",
+          secondary:
+            "from-purple-500 to-pink-600 hover:from-purple-400 hover:to-pink-500",
+          shadow1: "rgba(6, 182, 212, 0.4)",
+          shadow2: "rgba(168, 85, 247, 0.4)",
+        };
+    }
+  };
+
+  const buttonColors = getButtonColors();
 
   return (
     <div className="min-h-screen relative overflow-hidden">
@@ -229,7 +367,7 @@ export const Home: React.FC = () => {
             </motion.h1>
 
             <motion.p
-              className="text-slate-300 text-xl md:text-2xl font-light max-w-2xl leading-relaxed"
+              className={`${themeClasses.textSecondary} text-xl md:text-2xl font-light max-w-2xl leading-relaxed`}
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.5, duration: 1 }}
@@ -251,8 +389,16 @@ export const Home: React.FC = () => {
             className="relative"
           >
             <div className="w-72 h-72 md:w-96 md:h-96 relative">
-              {/* Glow effect */}
-              <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/20 to-purple-500/20 rounded-full blur-2xl animate-pulse" />
+              {/* Glow effect adaptativo al tema */}
+              <div
+                className={`absolute inset-0 ${
+                  theme === "light"
+                    ? "bg-gradient-to-r from-blue-500/30 to-purple-500/30"
+                    : theme === "purple"
+                    ? "bg-gradient-to-r from-purple-500/20 to-pink-500/20"
+                    : "bg-gradient-to-r from-cyan-500/20 to-purple-500/20"
+                } rounded-full blur-2xl animate-pulse`}
+              />
 
               <Lottie
                 animationData={sharkAnimation}
@@ -262,7 +408,7 @@ export const Home: React.FC = () => {
             </div>
           </motion.div>
 
-          {/* Botones mejorados */}
+          {/* Botones mejorados con colores adaptativos */}
           <motion.div
             initial={{ opacity: 0, y: 50 }}
             animate={{ opacity: 1, y: 0 }}
@@ -271,10 +417,10 @@ export const Home: React.FC = () => {
           >
             <motion.button
               onClick={() => navigate("/login")}
-              className="group relative px-10 py-4 text-lg font-bold rounded-2xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white shadow-2xl transition-all duration-500 transform hover:scale-105 hover:-translate-y-1"
+              className={`group relative px-10 py-4 text-lg font-bold rounded-2xl bg-gradient-to-r ${buttonColors.primary} text-white shadow-2xl transition-all duration-500 transform hover:scale-105 hover:-translate-y-1`}
               whileTap={{ scale: 0.95 }}
               whileHover={{
-                boxShadow: "0 20px 40px rgba(6, 182, 212, 0.4)",
+                boxShadow: `0 20px 40px ${buttonColors.shadow1}`,
               }}
             >
               <span className="relative z-10 flex items-center justify-center gap-2">
@@ -285,10 +431,10 @@ export const Home: React.FC = () => {
 
             <motion.button
               onClick={() => navigate("/register")}
-              className="group relative px-10 py-4 text-lg font-bold rounded-2xl bg-gradient-to-r from-purple-500 to-pink-600 hover:from-purple-400 hover:to-pink-500 text-white shadow-2xl transition-all duration-500 transform hover:scale-105 hover:-translate-y-1"
+              className={`group relative px-10 py-4 text-lg font-bold rounded-2xl bg-gradient-to-r ${buttonColors.secondary} text-white shadow-2xl transition-all duration-500 transform hover:scale-105 hover:-translate-y-1`}
               whileTap={{ scale: 0.95 }}
               whileHover={{
-                boxShadow: "0 20px 40px rgba(168, 85, 247, 0.4)",
+                boxShadow: `0 20px 40px ${buttonColors.shadow2}`,
               }}
             >
               <span className="relative z-10 flex items-center justify-center gap-2">
@@ -296,6 +442,33 @@ export const Home: React.FC = () => {
               </span>
               <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-white/0 via-white/20 to-white/0 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
             </motion.button>
+          </motion.div>
+
+          {/* Botón de acceso a configuración */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 1.2, duration: 1 }}
+            className="flex items-center gap-4"
+          >
+            <motion.button
+              onClick={() => navigate("/ajustes")}
+              className={`${themeClasses.cardBg} ${themeClasses.text} px-6 py-3 rounded-full border ${themeClasses.borderColor} ${themeClasses.hover} transition-all duration-300 hover:scale-105 flex items-center gap-2`}
+              whileTap={{ scale: 0.95 }}
+            >
+              ⚙️ Configuración
+            </motion.button>
+
+            <div className={`text-sm ${themeClasses.textSecondary}`}>
+              Tema actual:{" "}
+              <span className="text-blue-400 font-semibold">
+                {theme === "light"
+                  ? "☀️ Claro"
+                  : theme === "dark"
+                  ? "🌙 Oscuro"
+                  : "💜 Morado"}
+              </span>
+            </div>
           </motion.div>
 
           {/* Indicador de scroll */}
@@ -308,12 +481,18 @@ export const Home: React.FC = () => {
             <motion.div
               animate={{ y: [0, 10, 0] }}
               transition={{ duration: 2, repeat: Infinity }}
-              className="w-6 h-10 border-2 border-slate-400 rounded-full p-1"
+              className={`w-6 h-10 border-2 ${themeClasses.borderColor} rounded-full p-1`}
             >
               <motion.div
                 animate={{ y: [0, 16, 0] }}
                 transition={{ duration: 2, repeat: Infinity }}
-                className="w-1 h-3 bg-gradient-to-b from-cyan-400 to-purple-400 rounded-full mx-auto"
+                className={`w-1 h-3 ${
+                  theme === "light"
+                    ? "bg-gradient-to-b from-blue-600 to-purple-600"
+                    : theme === "purple"
+                    ? "bg-gradient-to-b from-purple-400 to-pink-400"
+                    : "bg-gradient-to-b from-cyan-400 to-purple-400"
+                } rounded-full mx-auto`}
               />
             </motion.div>
           </motion.div>
@@ -323,27 +502,59 @@ export const Home: React.FC = () => {
         <GameCarousel side="right" />
       </div>
 
-      {/* Glass card flotante con stats */}
+      {/* Glass card flotante con stats adaptativa al tema */}
       <motion.div
         initial={{ opacity: 0, x: 100 }}
         animate={{ opacity: 1, x: 0 }}
         transition={{ delay: 1.5, duration: 1 }}
         className="hidden xl:block fixed top-8 right-8 z-30"
       >
-        <div className="backdrop-blur-lg bg-white/10 border border-white/20 rounded-2xl p-6 shadow-2xl">
-          <h3 className="text-white font-bold text-lg mb-4">Gaming Stats</h3>
+        <div
+          className={`backdrop-blur-lg ${
+            theme === "light"
+              ? "bg-white/20 border-gray-300/30"
+              : "bg-white/10 border-white/20"
+          } border rounded-2xl p-6 shadow-2xl`}
+        >
+          <h3 className={`${themeClasses.text} font-bold text-lg mb-4`}>
+            Gaming Stats
+          </h3>
           <div className="space-y-3 text-sm">
-            <div className="flex justify-between text-slate-300">
-              <span>Usuarios activos: </span>
-              <span className="text-cyan-400 font-bold">12,543</span>
+            <div
+              className={`flex justify-between ${themeClasses.textSecondary}`}
+            >
+              <span>Usuarios activos:</span>
+              <span
+                className={`${
+                  theme === "light" ? "text-blue-600" : "text-cyan-400"
+                } font-bold`}
+              >
+                12,543
+              </span>
             </div>
-            <div className="flex justify-between text-slate-300">
-              <span>Juegos registrados: </span>
-              <span className="text-purple-400 font-bold">856,239</span>
+            <div
+              className={`flex justify-between ${themeClasses.textSecondary}`}
+            >
+              <span>Juegos registrados:</span>
+              <span
+                className={`${
+                  theme === "purple" ? "text-pink-400" : "text-purple-400"
+                } font-bold`}
+              >
+                856,239
+              </span>
             </div>
-            <div className="flex justify-between text-slate-300">
-              <span>Reviews totales: </span>
-              <span className="text-pink-400 font-bold">2,104,567</span>
+            <div
+              className={`flex justify-between ${themeClasses.textSecondary}`}
+            >
+              <span>Reviews totales:</span>
+              <span
+                className={`${
+                  theme === "light" ? "text-purple-600" : "text-pink-400"
+                } font-bold`}
+              >
+                2,104,567
+              </span>
             </div>
           </div>
         </div>

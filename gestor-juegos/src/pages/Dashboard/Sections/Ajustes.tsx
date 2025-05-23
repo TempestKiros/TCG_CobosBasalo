@@ -1,3 +1,4 @@
+// src/pages/Settings/Ajustes.tsx
 import React, { useState, useEffect } from "react";
 import {
   Settings,
@@ -14,7 +15,9 @@ import {
   Check,
   X,
   Info,
+  RefreshCw,
 } from "lucide-react";
+import { useSettings } from "./contexts/SettingsContext";
 
 interface UserType {
   displayName?: string | null;
@@ -27,8 +30,15 @@ interface AjustesProps {
 }
 
 export const Ajustes: React.FC<AjustesProps> = ({ user }) => {
-  // Estado del tema (usando estado en memoria ya que no tenemos localStorage)
-  const [theme, setTheme] = useState("dark");
+  const {
+    settings,
+    updateTheme,
+    updateNotifications,
+    updateGeneral,
+    updateProfile,
+    resetSettings,
+    getThemeClasses,
+  } = useSettings();
 
   const [activeSection, setActiveSection] = useState("perfil");
   const [loading, setLoading] = useState(false);
@@ -40,39 +50,27 @@ export const Ajustes: React.FC<AjustesProps> = ({ user }) => {
     type: "success" | "error";
   } | null>(null);
 
-  // Estados para el perfil
+  // Estados locales para formularios
   const [profileForm, setProfileForm] = useState({
-    displayName: user?.displayName || "Juan Pérez",
-    email: user?.email || "juan@ejemplo.com",
+    displayName:
+      settings.profile.displayName || user?.displayName || "Juan Pérez",
+    email: settings.profile.email || user?.email || "juan@ejemplo.com",
   });
 
-  // Estados para cambio de contraseña
   const [passwordForm, setPasswordForm] = useState({
     currentPassword: "",
     newPassword: "",
     confirmPassword: "",
   });
 
-  // Estados para notificaciones
-  const [notifications, setNotifications] = useState({
-    email: true,
-    push: false,
-    horarios: true,
-    recordatorios: true,
-  });
-
-  // Estados para configuración
-  const [config, setConfig] = useState({
-    idioma: "es",
-    formato24h: true,
-    autoSave: true,
-    theme: theme,
-  });
-
-  // Sincronizar tema con config
+  // Sincronizar formulario con configuración global
   useEffect(() => {
-    setConfig((prev) => ({ ...prev, theme }));
-  }, [theme]);
+    setProfileForm({
+      displayName:
+        settings.profile.displayName || user?.displayName || "Juan Pérez",
+      email: settings.profile.email || user?.email || "juan@ejemplo.com",
+    });
+  }, [settings.profile, user]);
 
   const handleProfileUpdate = async () => {
     if (!profileForm.displayName.trim()) {
@@ -86,6 +84,12 @@ export const Ajustes: React.FC<AjustesProps> = ({ user }) => {
     try {
       // Simular actualización de perfil
       await new Promise((resolve) => setTimeout(resolve, 1000));
+
+      // Actualizar configuración global
+      updateProfile({
+        displayName: profileForm.displayName,
+        email: profileForm.email,
+      });
 
       setMessage({ text: "Perfil actualizado correctamente", type: "success" });
     } catch (error: any) {
@@ -116,7 +120,6 @@ export const Ajustes: React.FC<AjustesProps> = ({ user }) => {
     setMessage(null);
 
     try {
-      // Simular cambio de contraseña
       await new Promise((resolve) => setTimeout(resolve, 1500));
 
       setMessage({
@@ -151,8 +154,8 @@ export const Ajustes: React.FC<AjustesProps> = ({ user }) => {
     }
   };
 
-  const handleThemeChange = (newTheme: string) => {
-    setTheme(newTheme);
+  const handleThemeChange = (newTheme: "light" | "dark" | "purple") => {
+    updateTheme(newTheme);
     setMessage({
       text: `Tema cambiado a ${
         newTheme === "light"
@@ -166,10 +169,7 @@ export const Ajustes: React.FC<AjustesProps> = ({ user }) => {
   };
 
   const handleNotificationChange = (key: string, value: boolean) => {
-    setNotifications((prev) => ({
-      ...prev,
-      [key]: value,
-    }));
+    updateNotifications({ [key]: value });
 
     const labels = {
       email: "por email",
@@ -187,10 +187,7 @@ export const Ajustes: React.FC<AjustesProps> = ({ user }) => {
   };
 
   const handleConfigChange = (key: string, value: any) => {
-    setConfig((prev) => ({
-      ...prev,
-      [key]: value,
-    }));
+    updateGeneral({ [key]: value });
 
     let messageText = "";
     switch (key) {
@@ -216,6 +213,14 @@ export const Ajustes: React.FC<AjustesProps> = ({ user }) => {
     }
   };
 
+  const handleResetSettings = () => {
+    resetSettings();
+    setMessage({
+      text: "Configuración restablecida a valores por defecto",
+      type: "success",
+    });
+  };
+
   const sections = [
     { id: "perfil", label: "Perfil", icon: User },
     { id: "apariencia", label: "Apariencia", icon: Palette },
@@ -239,39 +244,6 @@ export const Ajustes: React.FC<AjustesProps> = ({ user }) => {
     }
   }, [message]);
 
-  // Aplicar estilos dinámicos según el tema
-  const getThemeClasses = () => {
-    switch (theme) {
-      case "light":
-        return {
-          bg: "bg-gray-100",
-          text: "text-gray-900",
-          cardBg: "bg-white",
-          inputBg: "bg-gray-50",
-          borderColor: "border-gray-300",
-          textSecondary: "text-gray-600",
-        };
-      case "purple":
-        return {
-          bg: "bg-purple-900",
-          text: "text-white",
-          cardBg: "bg-purple-800",
-          inputBg: "bg-purple-700",
-          borderColor: "border-purple-600",
-          textSecondary: "text-purple-200",
-        };
-      default:
-        return {
-          bg: "bg-gray-900",
-          text: "text-white",
-          cardBg: "bg-gray-800",
-          inputBg: "bg-gray-700",
-          borderColor: "border-gray-600",
-          textSecondary: "text-gray-400",
-        };
-    }
-  };
-
   const themeClasses = getThemeClasses();
 
   return (
@@ -285,6 +257,9 @@ export const Ajustes: React.FC<AjustesProps> = ({ user }) => {
           <p className={themeClasses.textSecondary}>
             Personaliza tu experiencia y gestiona tu cuenta
           </p>
+          <div className="mt-2 text-sm text-blue-400">
+            ✨ Los cambios se aplican globalmente en toda la aplicación
+          </div>
         </div>
 
         {/* Message */}
@@ -344,7 +319,8 @@ export const Ajustes: React.FC<AjustesProps> = ({ user }) => {
                     <div>
                       <h2 className="text-2xl font-bold">Mi Perfil</h2>
                       <p className={themeClasses.textSecondary}>
-                        Actualiza tu información personal
+                        Actualiza tu información personal (se guarda
+                        globalmente)
                       </p>
                     </div>
                   </div>
@@ -410,7 +386,7 @@ export const Ajustes: React.FC<AjustesProps> = ({ user }) => {
                   <div>
                     <h2 className="text-2xl font-bold mb-2">Apariencia</h2>
                     <p className={themeClasses.textSecondary}>
-                      Personaliza la apariencia de la aplicación
+                      Personaliza la apariencia de toda la aplicación
                     </p>
                   </div>
 
@@ -418,24 +394,32 @@ export const Ajustes: React.FC<AjustesProps> = ({ user }) => {
                     <label
                       className={`block text-sm font-medium ${themeClasses.textSecondary} mb-4`}
                     >
-                      Tema de la aplicación
+                      Tema de la aplicación (Tema actual:{" "}
+                      <span className="text-blue-400 font-semibold">
+                        {settings.theme}
+                      </span>
+                      )
                     </label>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                       {themes.map((themeOption) => (
                         <div
                           key={themeOption.value}
                           className={`p-4 rounded-lg border-2 cursor-pointer transition-all duration-200 hover:scale-105 ${
-                            theme === themeOption.value
+                            settings.theme === themeOption.value
                               ? "border-blue-500 bg-blue-900/20 shadow-lg"
                               : `border-gray-600 hover:border-gray-500 ${themeClasses.cardBg}`
                           }`}
-                          onClick={() => handleThemeChange(themeOption.value)}
+                          onClick={() =>
+                            handleThemeChange(
+                              themeOption.value as "light" | "dark" | "purple"
+                            )
+                          }
                         >
                           <div className="flex items-center justify-between mb-2">
                             <h3 className="font-semibold">
                               {themeOption.label}
                             </h3>
-                            {theme === themeOption.value && (
+                            {settings.theme === themeOption.value && (
                               <Check className="w-5 h-5 text-blue-400" />
                             )}
                           </div>
@@ -458,50 +442,53 @@ export const Ajustes: React.FC<AjustesProps> = ({ user }) => {
                     <h2 className="text-2xl font-bold mb-2">Notificaciones</h2>
                     <p className={themeClasses.textSecondary}>
                       Configura cómo y cuándo recibir notificaciones
+                      (configuración global)
                     </p>
                   </div>
 
                   <div className="space-y-4">
-                    {Object.entries(notifications).map(([key, value]) => (
-                      <div
-                        key={key}
-                        className={`flex items-center justify-between p-4 ${themeClasses.inputBg} rounded-lg transition-all duration-200 hover:scale-102`}
-                      >
-                        <div>
-                          <h3 className="font-medium capitalize">
-                            {key === "email"
-                              ? "Notificaciones por email"
-                              : key === "push"
-                              ? "Notificaciones push"
-                              : key === "horarios"
-                              ? "Recordatorios de horarios"
-                              : "Recordatorios generales"}
-                          </h3>
-                          <p
-                            className={`text-sm ${themeClasses.textSecondary}`}
-                          >
-                            {key === "email"
-                              ? "Recibe actualizaciones por correo electrónico"
-                              : key === "push"
-                              ? "Notificaciones en tiempo real"
-                              : key === "horarios"
-                              ? "Avisos sobre tus horarios programados"
-                              : "Recordatorios y alertas importantes"}
-                          </p>
+                    {Object.entries(settings.notifications).map(
+                      ([key, value]) => (
+                        <div
+                          key={key}
+                          className={`flex items-center justify-between p-4 ${themeClasses.inputBg} rounded-lg transition-all duration-200 hover:scale-102`}
+                        >
+                          <div>
+                            <h3 className="font-medium capitalize">
+                              {key === "email"
+                                ? "Notificaciones por email"
+                                : key === "push"
+                                ? "Notificaciones push"
+                                : key === "horarios"
+                                ? "Recordatorios de horarios"
+                                : "Recordatorios generales"}
+                            </h3>
+                            <p
+                              className={`text-sm ${themeClasses.textSecondary}`}
+                            >
+                              {key === "email"
+                                ? "Recibe actualizaciones por correo electrónico"
+                                : key === "push"
+                                ? "Notificaciones en tiempo real"
+                                : key === "horarios"
+                                ? "Avisos sobre tus horarios programados"
+                                : "Recordatorios y alertas importantes"}
+                            </p>
+                          </div>
+                          <label className="relative inline-flex items-center cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={Boolean(value)}
+                              onChange={(e) =>
+                                handleNotificationChange(key, e.target.checked)
+                              }
+                              className="sr-only peer"
+                            />
+                            <div className="w-11 h-6 bg-gray-600 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                          </label>
                         </div>
-                        <label className="relative inline-flex items-center cursor-pointer">
-                          <input
-                            type="checkbox"
-                            checked={value}
-                            onChange={(e) =>
-                              handleNotificationChange(key, e.target.checked)
-                            }
-                            className="sr-only peer"
-                          />
-                          <div className="w-11 h-6 bg-gray-600 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-                        </label>
-                      </div>
-                    ))}
+                      )
+                    )}
                   </div>
                 </div>
               )}
@@ -539,7 +526,9 @@ export const Ajustes: React.FC<AjustesProps> = ({ user }) => {
                               }))
                             }
                             className={`w-full ${
-                              theme === "light" ? "bg-white" : "bg-gray-600"
+                              settings.theme === "light"
+                                ? "bg-white"
+                                : "bg-gray-600"
                             } ${
                               themeClasses.text
                             } px-4 py-3 pr-12 rounded-lg border ${
@@ -578,7 +567,9 @@ export const Ajustes: React.FC<AjustesProps> = ({ user }) => {
                               }))
                             }
                             className={`w-full ${
-                              theme === "light" ? "bg-white" : "bg-gray-600"
+                              settings.theme === "light"
+                                ? "bg-white"
+                                : "bg-gray-600"
                             } ${
                               themeClasses.text
                             } px-4 py-3 pr-12 rounded-lg border ${
@@ -631,7 +622,7 @@ export const Ajustes: React.FC<AjustesProps> = ({ user }) => {
                       Configuración General
                     </h2>
                     <p className={themeClasses.textSecondary}>
-                      Ajustes generales de la aplicación
+                      Ajustes generales de la aplicación (configuración global)
                     </p>
                   </div>
 
@@ -643,7 +634,7 @@ export const Ajustes: React.FC<AjustesProps> = ({ user }) => {
                         Idioma de la interfaz
                       </label>
                       <select
-                        value={config.idioma}
+                        value={settings.general.idioma}
                         onChange={(e) =>
                           handleConfigChange("idioma", e.target.value)
                         }
@@ -667,7 +658,7 @@ export const Ajustes: React.FC<AjustesProps> = ({ user }) => {
                       <label className="relative inline-flex items-center cursor-pointer">
                         <input
                           type="checkbox"
-                          checked={config.formato24h}
+                          checked={settings.general.formato24h}
                           onChange={(e) =>
                             handleConfigChange("formato24h", e.target.checked)
                           }
@@ -689,7 +680,7 @@ export const Ajustes: React.FC<AjustesProps> = ({ user }) => {
                       <label className="relative inline-flex items-center cursor-pointer">
                         <input
                           type="checkbox"
-                          checked={config.autoSave}
+                          checked={settings.general.autoSave}
                           onChange={(e) =>
                             handleConfigChange("autoSave", e.target.checked)
                           }
@@ -697,6 +688,60 @@ export const Ajustes: React.FC<AjustesProps> = ({ user }) => {
                         />
                         <div className="w-11 h-6 bg-gray-600 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
                       </label>
+                    </div>
+
+                    {/* Sección de configuración actual */}
+                    <div className={`${themeClasses.inputBg} p-4 rounded-lg`}>
+                      <h3 className="font-medium mb-3 flex items-center space-x-2">
+                        <Info className="w-5 h-5 text-blue-400" />
+                        <span>Configuración actual</span>
+                      </h3>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                        <div>
+                          <span className={themeClasses.textSecondary}>
+                            Tema:
+                          </span>
+                          <span className="ml-2 text-blue-400 font-semibold">
+                            {settings.theme === "light"
+                              ? "Claro"
+                              : settings.theme === "dark"
+                              ? "Oscuro"
+                              : "Morado"}
+                          </span>
+                        </div>
+                        <div>
+                          <span className={themeClasses.textSecondary}>
+                            Idioma:
+                          </span>
+                          <span className="ml-2 text-blue-400 font-semibold">
+                            {settings.general.idioma === "es"
+                              ? "Español"
+                              : settings.general.idioma === "en"
+                              ? "English"
+                              : "Français"}
+                          </span>
+                        </div>
+                        <div>
+                          <span className={themeClasses.textSecondary}>
+                            Formato 24h:
+                          </span>
+                          <span className="ml-2 text-blue-400 font-semibold">
+                            {settings.general.formato24h
+                              ? "Activado"
+                              : "Desactivado"}
+                          </span>
+                        </div>
+                        <div>
+                          <span className={themeClasses.textSecondary}>
+                            Auto-guardado:
+                          </span>
+                          <span className="ml-2 text-blue-400 font-semibold">
+                            {settings.general.autoSave
+                              ? "Activado"
+                              : "Desactivado"}
+                          </span>
+                        </div>
+                      </div>
                     </div>
 
                     <div className="border-t border-gray-600 pt-6">
@@ -707,18 +752,33 @@ export const Ajustes: React.FC<AjustesProps> = ({ user }) => {
                         </h3>
                       </div>
 
-                      <button
-                        onClick={handleLogout}
-                        disabled={loading}
-                        className="bg-red-600 hover:bg-red-700 disabled:bg-red-800 text-white py-3 px-6 rounded-lg font-semibold transition-all duration-200 flex items-center space-x-2 hover:scale-105 disabled:scale-100"
-                      >
-                        {loading ? (
-                          <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                        ) : (
-                          <LogOut className="w-5 h-5" />
-                        )}
-                        <span>Cerrar sesión</span>
-                      </button>
+                      <div className="space-y-4">
+                        <button
+                          onClick={handleResetSettings}
+                          disabled={loading}
+                          className="bg-yellow-600 hover:bg-yellow-700 disabled:bg-yellow-800 text-white py-3 px-6 rounded-lg font-semibold transition-all duration-200 flex items-center space-x-2 hover:scale-105 disabled:scale-100"
+                        >
+                          {loading ? (
+                            <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                          ) : (
+                            <RefreshCw className="w-5 h-5" />
+                          )}
+                          <span>Restablecer configuración</span>
+                        </button>
+
+                        <button
+                          onClick={handleLogout}
+                          disabled={loading}
+                          className="bg-red-600 hover:bg-red-700 disabled:bg-red-800 text-white py-3 px-6 rounded-lg font-semibold transition-all duration-200 flex items-center space-x-2 hover:scale-105 disabled:scale-100"
+                        >
+                          {loading ? (
+                            <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                          ) : (
+                            <LogOut className="w-5 h-5" />
+                          )}
+                          <span>Cerrar sesión</span>
+                        </button>
+                      </div>
                     </div>
                   </div>
                 </div>
