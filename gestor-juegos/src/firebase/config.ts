@@ -1,5 +1,5 @@
 // src/firebase/config.ts
-import { initializeApp } from "firebase/app";
+import firebase from "firebase/compat/app";
 import { getAuth } from "firebase/auth";
 import { getDatabase } from "firebase/database";
 
@@ -15,6 +15,6 @@ const firebaseConfig = {
   measurementId: "G-X20KHCW1J5",
 };
 
-const app = initializeApp(firebaseConfig);
+const app = firebase.initializeApp(firebaseConfig);
 export const auth = getAuth(app);
 export const database = getDatabase(app);

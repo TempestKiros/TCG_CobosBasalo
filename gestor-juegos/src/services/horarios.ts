@@ -1,4 +1,4 @@
-const API = "http://localhost:4000/api/horarios";
+const API = "http://localhost:3005/api/horarios";
 
 export const guardarHorario = (data: any) =>
   fetch(API, {
