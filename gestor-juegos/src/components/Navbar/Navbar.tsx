@@ -1,7 +1,13 @@
 import React, { Dispatch, SetStateAction } from "react";
 import styles from "./Navbar.module.css";
 
-export type Section = "perfil" | "horarios" | "juegos" | "anuncios" | "ajustes";
+export type Section =
+  | "perfil"
+  | "horarios"
+  | "juegos"
+  | "anuncios"
+  | "Foros"
+  | "ajustes";
 
 interface NavbarProps {
   onSelect: Dispatch<SetStateAction<Section>>;
@@ -14,6 +20,7 @@ const Navbar: React.FC<NavbarProps> = ({ onSelect, active }) => {
     "horarios",
     "juegos",
     "anuncios",
+    "Foros",
     "ajustes",
   ];
 

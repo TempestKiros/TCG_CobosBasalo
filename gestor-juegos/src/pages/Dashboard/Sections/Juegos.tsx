@@ -67,7 +67,7 @@ const juegosBaseDatos: Juego[] = [
     genero: ["Battle Royale", "Acción", "Multijugador"],
     precio: 0,
     imagen:
-      "https://cdn2.unrealengine.com/fortnite-chapter-4-season-4-key-art-3840x2160-d35912cc25ad.jpg",
+      "https://primagames.com/wp-content/uploads/2022/12/FortniteChapter4Start.jpg",
     steamUrl: "https://store.epicgames.com/es-ES/p/fortnite",
     descripcion:
       "Fortnite es el juego de supervivencia multijugador completamente gratuito donde tú y tus amigos colaboran para crear el mundo de sus sueños.",
@@ -81,9 +81,8 @@ const juegosBaseDatos: Juego[] = [
     desarrollador: "HoYoverse",
     genero: ["RPG", "Turn-Based", "Anime"],
     precio: 0,
-    imagen:
-      "https://webstatic.hoyoverse.com/upload/op-public/2023/04/11/a57e2bb3cd2e50b09ead7bf2ed0bbc45_7068841665871567773.jpg",
-    steamUrl: "https://store.steampowered.com/app/1718200/Honkai_Star_Rail/",
+    imagen: "https://spaces.whynowgaming.com/uploads/2023/04/honkai.jpg",
+    steamUrl: "https://hsr.hoyoverse.com/es-es/home",
     descripcion:
       "Embárcate en una aventura galáctica como Pionero para explorar mundos alienígenas con compañeros únicos.",
     fechaLanzamiento: "2023-04-26",
@@ -96,7 +95,8 @@ const juegosBaseDatos: Juego[] = [
     desarrollador: "Hypergryph",
     genero: ["Tower Defense", "Strategy", "Anime"],
     precio: 0,
-    imagen: "https://ak.hypergryph.com/assets/index/images/ak/pc/faction/1.jpg",
+    imagen:
+      "https://cf.geekdo-images.com/tHP2pCtFQ7MNWJKZJAKwpw__opengraph_letterbox/img/EYbZ3X31MduVwegRDrf7942WAKA=/fit-in/1200x630/filters:fill(auto):strip_icc()/pic5327886.png",
     steamUrl: "https://store.steampowered.com/app/1454663/Arknights/",
     descripcion:
       "Un juego de defensa de torres estratégico con elementos de RPG y una historia profunda.",
@@ -112,7 +112,7 @@ const juegosBaseDatos: Juego[] = [
     precio: 59.99,
     descuento: 25,
     imagen:
-      "https://media.contentapi.ea.com/content/dam/ea/fifa/fifa-24/common/f24-global-keyart-16x9.jpg",
+      "https://imgs.hipertextual.com/wp-content/uploads/2023/07/fc-24-scaled.jpg",
     steamUrl: "https://store.steampowered.com/app/2195250/EA_SPORTS_FC_24/",
     descripcion:
       "El juego de fútbol más realista con los equipos y jugadores más actualizados.",
@@ -142,8 +142,7 @@ const juegosBaseDatos: Juego[] = [
     desarrollador: "Blizzard Entertainment",
     genero: ["FPS", "Héroe Shooter", "Multijugador"],
     precio: 0,
-    imagen:
-      "https://blz-contentstack-images.akamaized.net/v3/assets/blt9c12f249ac15c7ec/blt7bb0d26b7de8ad8f/62ea82c3a54b0c73c5ad5de4/OW2_Season1_KeyArt_Logo.jpg",
+    imagen: "https://nerdbot.com/wp-content/uploads/2019/11/overwat-2.jpg",
     steamUrl: "https://playoverwatch.com/",
     descripcion:
       "Un shooter de héroes en equipo donde cada jugador tiene un papel crucial en la victoria.",

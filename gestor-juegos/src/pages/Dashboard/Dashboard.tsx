@@ -11,7 +11,7 @@ import { obtenerHorarios } from "../../services/horarios";
 const Dashboard: React.FC = () => {
   const { user, isLoading } = useAuth();
   const [section, setSection] = useState<
-    "perfil" | "horarios" | "juegos" | "anuncios" | "ajustes"
+    "perfil" | "horarios" | "juegos" | "anuncios" | "Foros" | "ajustes"
   >("perfil");
   const [horarios, setHorarios] = useState<any[]>([]);
 
@@ -52,6 +52,7 @@ const Dashboard: React.FC = () => {
         {section === "ajustes" && !isAnonymous && (
           <AjustesSection user={user} />
         )}
+        {section === "Foros" && !isAnonymous}
         {(section === "anuncios" || section === "ajustes") && isAnonymous && (
           <div>Esta sección no está disponible en modo invitado.</div>
         )}
