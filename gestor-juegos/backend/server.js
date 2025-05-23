@@ -4,24 +4,21 @@ const mongoose = require("mongoose");
 const cors = require("cors");
 
 const app = express();
+const port = process.env.PORT || 3000;
+
 app.use(cors());
 app.use(express.json());
 
-mongoose.connect(process.env.MONGODB_URI);
+mongoose
+  .connect(process.env.MONGO_URI, {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+  })
+  .then(() => console.log("Conectado a MongoDB"))
+  .catch((err) => console.error("Error de conexión:", err));
 
-const Horario = require("./models/Horario");
+app.use("/api/juegos", require("./routes/juegos"));
 
-// Crear horario
-app.post("/api/horarios", async (req, res) => {
-  const nuevo = new Horario(req.body);
-  await nuevo.save();
-  res.json({ success: true });
+app.listen(port, () => {
+  console.log(`Servidor corriendo en http://localhost:${port}`);
 });
-
-// Obtener horarios de un usuario
-app.get("/api/horarios/:uid", async (req, res) => {
-  const horarios = await Horario.find({ uid: req.params.uid });
-  res.json(horarios);
-});
-
-app.listen(4000, () => console.log("Backend escuchando en 4000"));
