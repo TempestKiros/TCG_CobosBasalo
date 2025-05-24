@@ -16,6 +16,7 @@ import {
   onValue,
   serverTimestamp,
 } from "firebase/database";
+import { useTheme } from "./contexts/SettingsContext"; // Tu contexto correcto
 import { useAuthState } from "react-firebase-hooks/auth";
 import { auth, database } from "../../../firebase/config";
 
@@ -178,6 +179,9 @@ export const Juegos: React.FC = () => {
   const [nuevasHoras, setNuevasHoras] = useState<number>(0);
   const [modalForo, setModalForo] = useState<string | null>(null);
 
+  // Usar el hook de theme de tu contexto correcto
+  const { theme, themeClasses } = useTheme();
+
   // Estados para datos de Firebase
   const [datosUsuario, setDatosUsuario] = useState<
     Record<string, DatosUsuarioJuego>
@@ -318,10 +322,14 @@ export const Juegos: React.FC = () => {
   // Mostrar loading si no hay usuario o se están cargando datos
   if (loading || cargandoDatos) {
     return (
-      <div className="p-6 bg-gray-900 min-h-screen text-white flex items-center justify-center">
+      <div
+        className={`p-6 ${themeClasses.bg} min-h-screen ${themeClasses.text} flex items-center justify-center transition-colors duration-300`}
+      >
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-400 mx-auto mb-4"></div>
-          <p className="text-gray-400">Cargando tu biblioteca...</p>
+          <p className={themeClasses.textSecondary}>
+            Cargando tu biblioteca...
+          </p>
         </div>
       </div>
     );
@@ -330,9 +338,11 @@ export const Juegos: React.FC = () => {
   // Mostrar mensaje si no hay usuario
   if (!user) {
     return (
-      <div className="p-6 bg-gray-900 min-h-screen text-white flex items-center justify-center">
+      <div
+        className={`p-6 ${themeClasses.bg} min-h-screen ${themeClasses.text} flex items-center justify-center transition-colors duration-300`}
+      >
         <div className="text-center">
-          <p className="text-gray-400 text-lg">
+          <p className={`${themeClasses.textSecondary} text-lg`}>
             Inicia sesión para ver tu biblioteca de juegos
           </p>
         </div>
@@ -341,34 +351,40 @@ export const Juegos: React.FC = () => {
   }
 
   return (
-    <div className="p-6 bg-gray-900 min-h-screen text-white">
+    <div
+      className={`p-6 ${themeClasses.bg} min-h-screen ${themeClasses.text} transition-colors duration-300`}
+    >
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-4xl font-bold mb-2 text-blue-400">
             Mi Biblioteca de Juegos
           </h1>
-          <p className="text-gray-400">
+          <p className={themeClasses.textSecondary}>
             Explora, organiza y disfruta tu colección de juegos
           </p>
         </div>
 
         {/* Controles de búsqueda y filtros */}
-        <div className="mb-6 flex flex-col md:flex-row gap-4 bg-gray-800 p-4 rounded-lg">
+        <div
+          className={`mb-6 flex flex-col md:flex-row gap-4 ${themeClasses.cardBg} p-4 rounded-lg border ${themeClasses.borderColor}`}
+        >
           <div className="flex-1 relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+            <Search
+              className={`absolute left-3 top-1/2 transform -translate-y-1/2 ${themeClasses.textSecondary} w-5 h-5`}
+            />
             <input
               type="text"
               placeholder="Buscar juegos..."
               value={busqueda}
               onChange={(e) => setBusqueda(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 bg-gray-700 border border-gray-600 rounded-md text-white placeholder-gray-400 focus:outline-none focus:border-blue-500"
+              className={`w-full pl-10 pr-4 py-2 ${themeClasses.inputBg} border ${themeClasses.borderColor} rounded-md ${themeClasses.text} placeholder-gray-400 focus:outline-none focus:border-blue-500 transition-colors duration-200`}
             />
           </div>
           <select
             value={filtroGenero}
             onChange={(e) => setFiltroGenero(e.target.value)}
-            className="px-4 py-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:outline-none focus:border-blue-500"
+            className={`px-4 py-2 ${themeClasses.inputBg} border ${themeClasses.borderColor} rounded-md ${themeClasses.text} focus:outline-none focus:border-blue-500 transition-colors duration-200`}
           >
             {generosUnicos.map((genero) => (
               <option key={genero} value={genero}>
@@ -391,7 +407,7 @@ export const Juegos: React.FC = () => {
             return (
               <div
                 key={juego.id}
-                className="bg-gray-800 rounded-lg overflow-hidden shadow-lg hover:shadow-xl transition-shadow duration-300"
+                className={`${themeClasses.cardBg} rounded-lg overflow-hidden shadow-lg hover:shadow-xl transition-all duration-300 border ${themeClasses.borderColor}`}
               >
                 {/* Imagen del juego */}
                 <div className="relative">
@@ -407,11 +423,11 @@ export const Juegos: React.FC = () => {
                   )}
                   <button
                     onClick={() => toggleFavorito(juego.id)}
-                    className={`absolute top-2 right-2 p-2 rounded-full ${
+                    className={`absolute top-2 right-2 p-2 rounded-full transition-colors duration-200 ${
                       datosJuego.esFavorito
                         ? "bg-red-600 text-white"
-                        : "bg-gray-700 text-gray-300 hover:bg-gray-600"
-                    } transition-colors duration-200`}
+                        : `${themeClasses.hover} ${themeClasses.textSecondary}`
+                    }`}
                   >
                     <Heart
                       className="w-4 h-4"
@@ -427,10 +443,10 @@ export const Juegos: React.FC = () => {
 
                 {/* Contenido del juego */}
                 <div className="p-4">
-                  <h3 className="text-xl font-bold mb-1 text-white">
+                  <h3 className={`text-xl font-bold mb-1 ${themeClasses.text}`}>
                     {juego.nombre}
                   </h3>
-                  <p className="text-gray-400 text-sm mb-2">
+                  <p className={`${themeClasses.textSecondary} text-sm mb-2`}>
                     {juego.desarrollador}
                   </p>
 
@@ -449,7 +465,9 @@ export const Juegos: React.FC = () => {
                   {/* Calificación */}
                   <div className="flex items-center mb-2">
                     <Star className="w-4 h-4 text-yellow-400 fill-current" />
-                    <span className="ml-1 text-sm text-gray-300">
+                    <span
+                      className={`ml-1 text-sm ${themeClasses.textSecondary}`}
+                    >
                       {juego.calificacion}/5
                     </span>
                   </div>
@@ -458,7 +476,9 @@ export const Juegos: React.FC = () => {
                   <div className="mb-3">
                     {juego.descuento ? (
                       <div className="flex items-center gap-2">
-                        <span className="text-gray-400 line-through text-sm">
+                        <span
+                          className={`${themeClasses.textSecondary} line-through text-sm`}
+                        >
                           ${juego.precio.toFixed(2)}
                         </span>
                         <span className="text-green-400 font-bold">
@@ -474,7 +494,9 @@ export const Juegos: React.FC = () => {
 
                   {/* Horas jugadas */}
                   {datosJuego.horasJugadas > 0 && (
-                    <div className="flex items-center mb-2 text-sm text-gray-300">
+                    <div
+                      className={`flex items-center mb-2 text-sm ${themeClasses.textSecondary}`}
+                    >
                       <Clock className="w-4 h-4 mr-1" />
                       <span>{datosJuego.horasJugadas} horas jugadas</span>
                     </div>
@@ -486,7 +508,7 @@ export const Juegos: React.FC = () => {
                       href={juego.steamUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md transition-colors duration-200"
+                      className={`flex items-center justify-center gap-2 ${themeClasses.accent} hover:opacity-80 text-white px-4 py-2 rounded-md transition-colors duration-200`}
                     >
                       <ExternalLink className="w-4 h-4" />
                       Ver en Steam
@@ -498,7 +520,7 @@ export const Juegos: React.FC = () => {
                           setModalHoras(juego.id);
                           setNuevasHoras(datosJuego.horasJugadas || 0);
                         }}
-                        className="flex-1 flex items-center justify-center gap-1 bg-gray-700 hover:bg-gray-600 text-white px-3 py-2 rounded-md text-sm transition-colors duration-200"
+                        className={`flex-1 flex items-center justify-center gap-1 ${themeClasses.cardBg} ${themeClasses.hover} ${themeClasses.text} px-3 py-2 rounded-md text-sm transition-colors duration-200 border ${themeClasses.borderColor}`}
                       >
                         <Clock className="w-4 h-4" />
                         Horas
@@ -507,10 +529,10 @@ export const Juegos: React.FC = () => {
                       {juego.tieneForo && (
                         <button
                           onClick={() => setModalForo(juego.id)}
-                          className={`flex-1 flex items-center justify-center gap-1 px-3 py-2 rounded-md text-sm transition-colors duration-200 ${
+                          className={`flex-1 flex items-center justify-center gap-1 px-3 py-2 rounded-md text-sm transition-colors duration-200 text-white ${
                             datosJuego.miembroForo
-                              ? "bg-green-700 hover:bg-green-600 text-white"
-                              : "bg-purple-700 hover:bg-purple-600 text-white"
+                              ? "bg-green-600 hover:bg-green-700"
+                              : "bg-purple-700 hover:bg-purple-600"
                           }`}
                         >
                           <MessageSquare className="w-4 h-4" />
@@ -528,7 +550,7 @@ export const Juegos: React.FC = () => {
         {/* Mensaje si no hay resultados */}
         {juegosFiltrados.length === 0 && (
           <div className="text-center py-12">
-            <p className="text-gray-400 text-lg">
+            <p className={`${themeClasses.textSecondary} text-lg`}>
               No se encontraron juegos que coincidan con tu búsqueda.
             </p>
           </div>
@@ -538,24 +560,28 @@ export const Juegos: React.FC = () => {
       {/* Modal para actualizar horas */}
       {modalHoras && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-gray-800 p-6 rounded-lg max-w-md w-full mx-4">
-            <h3 className="text-xl font-bold mb-4 text-white">
+          <div
+            className={`${themeClasses.cardBg} p-6 rounded-lg max-w-md w-full mx-4 border ${themeClasses.borderColor}`}
+          >
+            <h3 className={`text-xl font-bold mb-4 ${themeClasses.text}`}>
               Actualizar Horas Jugadas
             </h3>
             <div className="mb-4">
-              <label className="block text-gray-300 mb-2">Horas jugadas:</label>
+              <label className={`block ${themeClasses.textSecondary} mb-2`}>
+                Horas jugadas:
+              </label>
               <input
                 type="number"
                 min="0"
                 value={nuevasHoras}
                 onChange={(e) => setNuevasHoras(Number(e.target.value))}
-                className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:outline-none focus:border-blue-500"
+                className={`w-full px-3 py-2 ${themeClasses.inputBg} border ${themeClasses.borderColor} rounded-md ${themeClasses.text} focus:outline-none focus:border-blue-500 transition-colors duration-200`}
               />
             </div>
             <div className="flex gap-3">
               <button
                 onClick={() => actualizarHoras(modalHoras, nuevasHoras)}
-                className="flex-1 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md transition-colors duration-200"
+                className={`flex-1 ${themeClasses.accent} hover:opacity-80 text-white px-4 py-2 rounded-md transition-colors duration-200`}
               >
                 Guardar
               </button>
@@ -564,7 +590,7 @@ export const Juegos: React.FC = () => {
                   setModalHoras(null);
                   setNuevasHoras(0);
                 }}
-                className="flex-1 bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-md transition-colors duration-200"
+                className={`flex-1 ${themeClasses.cardBg} ${themeClasses.hover} ${themeClasses.text} px-4 py-2 rounded-md transition-colors duration-200 border ${themeClasses.borderColor}`}
               >
                 Cancelar
               </button>
@@ -576,13 +602,15 @@ export const Juegos: React.FC = () => {
       {/* Modal para unirse al foro */}
       {modalForo && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-gray-800 p-6 rounded-lg max-w-md w-full mx-4">
-            <h3 className="text-xl font-bold mb-4 text-white">
+          <div
+            className={`${themeClasses.cardBg} p-6 rounded-lg max-w-md w-full mx-4 border ${themeClasses.borderColor}`}
+          >
+            <h3 className={`text-xl font-bold mb-4 ${themeClasses.text}`}>
               {datosUsuario[modalForo]?.miembroForo
                 ? "Salir del Foro"
                 : "Unirse al Foro"}
             </h3>
-            <p className="text-gray-300 mb-4">
+            <p className={`${themeClasses.textSecondary} mb-4`}>
               {datosUsuario[modalForo]?.miembroForo
                 ? "¿Estás seguro de que quieres salir del foro de este juego?"
                 : "¿Quieres unirte al foro de este juego para participar en discusiones?"}
@@ -590,17 +618,17 @@ export const Juegos: React.FC = () => {
             <div className="flex gap-3">
               <button
                 onClick={() => toggleMiembroForo(modalForo)}
-                className={`flex-1 px-4 py-2 rounded-md transition-colors duration-200 ${
+                className={`flex-1 px-4 py-2 rounded-md transition-colors duration-200 text-white ${
                   datosUsuario[modalForo]?.miembroForo
-                    ? "bg-red-600 hover:bg-red-700 text-white"
-                    : "bg-green-600 hover:bg-green-700 text-white"
+                    ? "bg-red-600 hover:bg-red-700"
+                    : "bg-green-600 hover:bg-green-700"
                 }`}
               >
                 {datosUsuario[modalForo]?.miembroForo ? "Salir" : "Unirse"}
               </button>
               <button
                 onClick={() => setModalForo(null)}
-                className="flex-1 bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-md transition-colors duration-200"
+                className={`flex-1 ${themeClasses.cardBg} ${themeClasses.hover} ${themeClasses.text} px-4 py-2 rounded-md transition-colors duration-200 border ${themeClasses.borderColor}`}
               >
                 Cancelar
               </button>

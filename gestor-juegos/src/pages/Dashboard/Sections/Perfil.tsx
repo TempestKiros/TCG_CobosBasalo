@@ -14,7 +14,6 @@ import {
   Clock,
   Trophy,
   Activity,
-  Settings,
 } from "lucide-react";
 import { EditProfileModal } from "./contexts/EditProfileModal";
 

@@ -1,5 +1,6 @@
 // src/pages/Dashboard/Sections/Anuncios.tsx
 import React, { useState, useEffect } from "react";
+import { useTheme } from "./contexts/SettingsContext";
 import {
   Search,
   ExternalLink,
@@ -146,6 +147,7 @@ export const Anuncios: React.FC = () => {
   const [busqueda, setBusqueda] = useState("");
   const [filtroCategoria, setFiltroCategoria] = useState("Todas");
   const [ordenPor, setOrdenPor] = useState("recientes");
+  const { theme, themeClasses } = useTheme();
 
   // Obtener categorías únicas para el filtro
   const categoriasUnicas = [
