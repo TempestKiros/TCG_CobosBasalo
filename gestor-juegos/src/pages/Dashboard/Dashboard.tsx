@@ -5,7 +5,7 @@ import { Perfil } from "./Sections/Perfil";
 // Cambiamos la importación del componente de horarios
 import { HorariosSection } from "./Sections/components/HorariosSection";
 import { Juegos } from "./Sections/Juegos";
-import { ForosSection } from "./Sections/Foros";
+import ForosSection from "./Sections/Foros";
 import { Anuncios } from "./Sections/Anuncios";
 import { Ajustes } from "./Sections/Ajustes";
 // Usamos el nuevo hook de horarios
