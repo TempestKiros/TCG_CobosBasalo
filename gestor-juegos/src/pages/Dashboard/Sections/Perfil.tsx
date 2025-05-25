@@ -1,5 +1,5 @@
 // src/components/Perfil/Perfil.tsx
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import { User } from "firebase/auth";
 import { getDatabase, ref, get, set } from "firebase/database";
 import { useSettings, useTheme } from "./contexts/SettingsContext";
@@ -47,6 +47,8 @@ export const Perfil: React.FC<PerfilProps> = ({ user }) => {
     timezone: "",
     favoriteGames: ["", "", "", "", ""],
   });
+  const [showToast, setShowToast] = useState(false);
+  const [toastContent, setToastContent] = useState({ title: "", content: "" });
 
   const gruposBotones = [
     ["Lunes", "Martes"],
@@ -69,6 +71,95 @@ export const Perfil: React.FC<PerfilProps> = ({ user }) => {
     "Nov",
     "Dic",
   ];
+
+  const diasSemana = ["D", "L", "M", "X", "J", "V", "S"];
+
+  // Generar datos de contribución realistas
+  const contributionData = useMemo(() => {
+    const data = [];
+    const startDate = new Date("2025-01-01");
+
+    // Encontrar el primer domingo del año para alinear correctamente
+    let currentDate = new Date(startDate);
+    while (currentDate.getDay() !== 0) {
+      currentDate.setDate(currentDate.getDate() - 1);
+    }
+
+    // Generar 53 semanas de datos (371 días para cubrir todo el año)
+    for (let i = 0; i < 371; i++) {
+      const date = new Date(currentDate);
+      date.setDate(currentDate.getDate() + i);
+
+      // Generar nivel de actividad con patrones más realistas
+      let level = 0;
+      const random = Math.random();
+      const dayOfWeek = date.getDay();
+
+      // Más actividad en fines de semana
+      const weekendBonus = dayOfWeek === 0 || dayOfWeek === 6 ? 0.3 : 0;
+
+      // Crear algunos períodos de alta/baja actividad
+      const dayOfYear = Math.floor(
+        (date.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)
+      );
+      const seasonalPattern = Math.sin((dayOfYear / 365) * 2 * Math.PI) * 0.2;
+
+      const activityChance = 0.4 + weekendBonus + seasonalPattern;
+
+      if (random < activityChance) {
+        if (random < activityChance * 0.3) level = 1;
+        else if (random < activityChance * 0.6) level = 2;
+        else if (random < activityChance * 0.8) level = 3;
+        else level = 4;
+      }
+
+      data.push({
+        date: new Date(date),
+        level: level,
+        hours: level * (1 + Math.random() * 2), // 0-8 horas aproximadamente
+      });
+    }
+
+    return data;
+  }, []);
+
+  // Agrupar datos por semanas para el grid
+  const weeklyData = useMemo(() => {
+    const weeks = [];
+    for (let i = 0; i < contributionData.length; i += 7) {
+      weeks.push(contributionData.slice(i, i + 7));
+    }
+    return weeks;
+  }, [contributionData]);
+
+  // Calcular estadísticas
+  const stats = useMemo(() => {
+    const activeDays = contributionData.filter((day) => day.level > 0).length;
+    const totalHours = contributionData.reduce(
+      (sum, day) => sum + day.hours,
+      0
+    );
+
+    // Calcular racha máxima
+    let maxStreak = 0;
+    let currentStreak = 0;
+
+    contributionData.forEach((day) => {
+      if (day.level > 0) {
+        currentStreak++;
+        maxStreak = Math.max(maxStreak, currentStreak);
+      } else {
+        currentStreak = 0;
+      }
+    });
+
+    return {
+      activeDays,
+      totalHours: Math.round(totalHours),
+      gamesCompleted: Math.floor(totalHours / 15), // Asumiendo 15 horas por juego
+      maxStreak,
+    };
+  }, [contributionData]);
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -189,51 +280,102 @@ export const Perfil: React.FC<PerfilProps> = ({ user }) => {
     setEditingDescription(false);
   };
 
+  const showContributionsInfo = () => {
+    setToastContent({
+      title: "💡 ¿Cómo contamos las contribuciones?",
+      content: `
+        📊 **Sistema de Actividad Gaming:**
+        
+        🎮 **Niveles de Intensidad:**
+        • Sin color: Sin actividad gaming
+        • Verde claro: 1-2 horas de juego
+        • Verde medio: 2-4 horas de juego  
+        • Verde intenso: 4-6 horas de juego
+        • Verde máximo: 6+ horas de juego
+        
+        📅 **Patrones de Actividad:**
+        • Más actividad en fines de semana
+        • Variaciones estacionales a lo largo del año
+        • Rachas de gaming intenso y períodos de descanso
+        
+        📈 **Estadísticas Calculadas:**
+        • Días activos: Días con cualquier actividad gaming
+        • Horas totales: Suma de todas las horas jugadas
+        • Juegos completados: Estimado (15 horas = 1 juego)
+        • Racha máxima: Días consecutivos con actividad
+        
+        🕒 **Horarios de la Semana:**
+        Los horarios muestran tus compañeros de gaming favoritos para cada día, con sus niveles actuales y disponibilidad.
+      `,
+    });
+    setShowToast(true);
+  };
+
+  const showScheduleInfo = (day: string) => {
+    setToastContent({
+      title: `📅 Horarios de ${day}`,
+      content: `
+        🎮 **Compañeros de Gaming - ${day}:**
+        
+        👤 **TheClone (Level 24)**
+        • Especialidad: Juegos de estrategia
+        • Horario típico: Tardes y noches
+        • Estado: Activo frecuentemente
+        
+        👤 **DeepPlayer (Level 18)**  
+        • Especialidad: RPGs y aventuras
+        • Horario típico: Mañanas y fines de semana
+        • Estado: Jugador dedicado
+        
+        💡 **Funciones de los Horarios:**
+        • Planifica sesiones de gaming cooperativo
+        • Encuentra compañeros con niveles similares
+        • Organiza torneos y competencias
+        • Coordina horarios para juegos multijugador
+        
+        🔔 **Próximamente:**
+        • Notificaciones cuando están en línea
+        • Sistema de invitaciones automáticas
+        • Calendario de eventos grupales
+      `,
+    });
+    setShowToast(true);
+  };
+
+  const closeToast = () => {
+    setShowToast(false);
+    setTimeout(() => {
+      setToastContent({ title: "", content: "" });
+    }, 300);
+  };
+
   // Avatar por defecto adaptativo al tema
   const avatarUrl =
     userData?.avatar || user.photoURL || "https://i.pravatar.cc/150?img=3";
   const displayName = userData?.username || user.displayName || "Usuario";
 
-  // Generar datos de contribuciones aleatorios
-  const contributionData = Array.from({ length: 365 }, (_, i) => {
-    const random = Math.random();
-    return {
-      level:
-        random > 0.8
-          ? 4
-          : random > 0.6
-          ? 3
-          : random > 0.4
-          ? 2
-          : random > 0.2
-          ? 1
-          : 0,
-      date: new Date(Date.now() - (365 - i) * 24 * 60 * 60 * 1000),
-    };
-  });
-
   const getContributionColor = (level: number) => {
     const colors = {
       light: [
-        "bg-gray-200",
-        "bg-green-200",
-        "bg-green-300",
-        "bg-green-400",
-        "bg-green-500",
+        "bg-gray-200 hover:bg-gray-300",
+        "bg-green-200 hover:bg-green-300",
+        "bg-green-300 hover:bg-green-400",
+        "bg-green-400 hover:bg-green-500",
+        "bg-green-500 hover:bg-green-600",
       ],
       dark: [
-        "bg-gray-700",
-        "bg-green-300",
-        "bg-green-400",
-        "bg-green-500",
-        "bg-green-600",
+        "bg-gray-800 hover:bg-gray-700",
+        "bg-green-900 hover:bg-green-800",
+        "bg-green-700 hover:bg-green-600",
+        "bg-green-500 hover:bg-green-400",
+        "bg-green-300 hover:bg-green-200",
       ],
       purple: [
-        "bg-gray-700",
-        "bg-purple-300",
-        "bg-purple-400",
-        "bg-purple-500",
-        "bg-purple-600",
+        "bg-gray-800 hover:bg-gray-700",
+        "bg-purple-900 hover:bg-purple-800",
+        "bg-purple-700 hover:bg-purple-600",
+        "bg-purple-500 hover:bg-purple-400",
+        "bg-purple-300 hover:bg-purple-200",
       ],
     };
     return colors[theme][level] || colors[theme][0];
@@ -410,7 +552,9 @@ export const Perfil: React.FC<PerfilProps> = ({ user }) => {
                   <Clock className="w-4 h-4 text-blue-400" />
                   <span className="text-sm">Horas este mes</span>
                 </div>
-                <span className="font-bold text-blue-400">127h</span>
+                <span className="font-bold text-blue-400">
+                  {Math.round(stats.totalHours / 12)}h
+                </span>
               </div>
 
               <div className="flex items-center justify-between">
@@ -463,7 +607,8 @@ export const Perfil: React.FC<PerfilProps> = ({ user }) => {
               {gruposBotones.flat().map((dia, index) => (
                 <div
                   key={dia}
-                  className={`${themeClasses.cardBg} rounded-xl p-6 border ${themeClasses.borderColor} ${themeClasses.hover} transition-all duration-300 hover:scale-105 shadow-lg`}
+                  className={`${themeClasses.cardBg} rounded-xl p-6 border ${themeClasses.borderColor} ${themeClasses.hover} transition-all duration-300 hover:scale-105 shadow-lg cursor-pointer`}
+                  onClick={() => showScheduleInfo(dia)}
                 >
                   <h3 className="text-xl font-semibold mb-4 flex items-center space-x-2">
                     <span className="text-blue-400">📅</span>
@@ -498,7 +643,7 @@ export const Perfil: React.FC<PerfilProps> = ({ user }) => {
             </div>
           </div>
 
-          {/* Gráfico de horas jugadas mejorado */}
+          {/* Gráfico de horas jugadas FUNCIONAL mejorado */}
           <div
             className={`${themeClasses.cardBg} rounded-xl p-8 border ${themeClasses.borderColor} shadow-lg`}
           >
@@ -517,93 +662,147 @@ export const Perfil: React.FC<PerfilProps> = ({ user }) => {
               </div>
             </div>
 
-            {/* Grid de contribuciones estilo GitHub mejorado */}
+            {/* Grid de contribuciones estilo GitHub FUNCIONAL */}
             <div className="mb-6">
-              <div
-                className={`flex text-xs ${themeClasses.textSecondary} mb-3`}
-              >
-                {meses.map((mes) => (
-                  <div key={mes} className="flex-1 text-center font-medium">
+              {/* Encabezados de meses */}
+              <div className="flex mb-2 ml-6">
+                {meses.map((mes, index) => (
+                  <div
+                    key={mes}
+                    className={`text-xs ${themeClasses.textSecondary} font-medium`}
+                    style={{
+                      width: `${100 / 12}%`,
+                      textAlign: "left",
+                      marginLeft: index === 0 ? "0" : `${index * 4.3}px`,
+                    }}
+                  >
                     {mes}
                   </div>
                 ))}
               </div>
 
-              <div className="grid grid-cols-53 gap-1 mb-4">
-                {contributionData.map((day, i) => (
-                  <div
-                    key={i}
-                    className={`w-3 h-3 rounded-sm ${getContributionColor(
-                      day.level
-                    )} hover:ring-2 hover:ring-blue-400 transition-all duration-200 cursor-pointer`}
-                    title={`${
-                      day.level
-                    } contribuciones el ${day.date.toLocaleDateString()}`}
-                  ></div>
-                ))}
+              {/* Grid principal */}
+              <div className="flex">
+                {/* Días de la semana */}
+                <div className="flex flex-col mr-2">
+                  {diasSemana.map((dia, index) => (
+                    <div
+                      key={dia}
+                      className={`text-xs ${themeClasses.textSecondary} h-3 flex items-center mb-1`}
+                      style={{ opacity: index % 2 === 0 ? 1 : 0 }}
+                    >
+                      {dia}
+                    </div>
+                  ))}
+                </div>
+
+                {/* Grid de contribuciones */}
+                <div className="flex gap-1">
+                  {weeklyData.map((week, weekIndex) => (
+                    <div key={weekIndex} className="flex flex-col gap-1">
+                      {week.map((day, dayIndex) => (
+                        <div
+                          key={`${weekIndex}-${dayIndex}`}
+                          className={`w-3 h-3 rounded-sm ${getContributionColor(
+                            day.level
+                          )} 
+                                    hover:ring-2 hover:ring-blue-400 transition-all duration-200 cursor-pointer`}
+                          title={`${
+                            day.level > 0
+                              ? `${day.hours.toFixed(1)} horas`
+                              : "Sin actividad"
+                          } el ${day.date.toLocaleDateString("es-ES")}`}
+                        />
+                      ))}
+                    </div>
+                  ))}
+                </div>
               </div>
 
+              {/* Leyenda inferior */}
               <div
-                className={`flex justify-between items-center text-xs ${themeClasses.textSecondary}`}
+                className={`flex justify-between items-center text-xs ${themeClasses.textSecondary} mt-4`}
               >
-                <span className="hover:text-blue-400 cursor-pointer transition-colors">
+                <span
+                  className="hover:text-blue-400 cursor-pointer transition-colors"
+                  onClick={showContributionsInfo}
+                >
                   💡 Aprende cómo contamos las contribuciones
                 </span>
                 <div className="flex items-center space-x-2">
                   <span>Menos</span>
-                  <div
-                    className={`w-3 h-3 ${getContributionColor(0)} rounded-sm`}
-                  ></div>
-                  <div
-                    className={`w-3 h-3 ${getContributionColor(1)} rounded-sm`}
-                  ></div>
-                  <div
-                    className={`w-3 h-3 ${getContributionColor(2)} rounded-sm`}
-                  ></div>
-                  <div
-                    className={`w-3 h-3 ${getContributionColor(3)} rounded-sm`}
-                  ></div>
-                  <div
-                    className={`w-3 h-3 ${getContributionColor(4)} rounded-sm`}
-                  ></div>
+                  {[0, 1, 2, 3, 4].map((level) => (
+                    <div
+                      key={level}
+                      className={`w-3 h-3 ${getContributionColor(
+                        level
+                      )} rounded-sm`}
+                    />
+                  ))}
                   <span>Más</span>
                 </div>
               </div>
             </div>
 
-            {/* Estadísticas adicionales */}
+            {/* Estadísticas DINÁMICAS */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mt-6">
               <div
-                className={`${themeClasses.inputBg} rounded-lg p-4 text-center`}
+                className={`${themeClasses.inputBg} rounded-lg p-4 text-center hover:bg-opacity-80 transition-all`}
               >
-                <div className="text-2xl font-bold text-green-400">342</div>
+                <div className="text-2xl font-bold text-green-400">
+                  {stats.activeDays}
+                </div>
                 <div className={`text-sm ${themeClasses.textSecondary}`}>
                   Días activos
                 </div>
               </div>
               <div
-                className={`${themeClasses.inputBg} rounded-lg p-4 text-center`}
+                className={`${themeClasses.inputBg} rounded-lg p-4 text-center hover:bg-opacity-80 transition-all`}
               >
-                <div className="text-2xl font-bold text-blue-400">1,247</div>
+                <div className="text-2xl font-bold text-blue-400">
+                  {stats.totalHours}
+                </div>
                 <div className={`text-sm ${themeClasses.textSecondary}`}>
                   Horas totales
                 </div>
               </div>
               <div
-                className={`${themeClasses.inputBg} rounded-lg p-4 text-center`}
+                className={`${themeClasses.inputBg} rounded-lg p-4 text-center hover:bg-opacity-80 transition-all`}
               >
-                <div className="text-2xl font-bold text-purple-400">87</div>
+                <div className="text-2xl font-bold text-purple-400">
+                  {stats.gamesCompleted}
+                </div>
                 <div className={`text-sm ${themeClasses.textSecondary}`}>
                   Juegos completados
                 </div>
               </div>
               <div
-                className={`${themeClasses.inputBg} rounded-lg p-4 text-center`}
+                className={`${themeClasses.inputBg} rounded-lg p-4 text-center hover:bg-opacity-80 transition-all`}
               >
-                <div className="text-2xl font-bold text-yellow-400">23</div>
+                <div className="text-2xl font-bold text-yellow-400">
+                  {stats.maxStreak}
+                </div>
                 <div className={`text-sm ${themeClasses.textSecondary}`}>
                   Racha máxima
                 </div>
+              </div>
+            </div>
+
+            {/* Información adicional */}
+            <div className="mt-6 pt-4 border-t border-gray-700">
+              <div className="flex flex-wrap gap-4 text-sm text-gray-400">
+                <span>
+                  🎮 Última actividad:{" "}
+                  {contributionData
+                    .filter((d) => d.level > 0)
+                    .pop()
+                    ?.date.toLocaleDateString("es-ES")}
+                </span>
+                <span>
+                  📊 Promedio diario: {(stats.totalHours / 365).toFixed(1)}{" "}
+                  horas
+                </span>
+                <span>🏆 Mejor racha: {stats.maxStreak} días consecutivos</span>
               </div>
             </div>
           </div>
@@ -627,6 +826,115 @@ export const Perfil: React.FC<PerfilProps> = ({ user }) => {
           </span>
         </div>
       </div>
+
+      {/* Toast de información */}
+      {showToast && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          {/* Overlay */}
+          <div
+            className="absolute inset-0 bg-black bg-opacity-50 backdrop-blur-sm"
+            onClick={closeToast}
+          ></div>
+
+          {/* Toast */}
+          <div
+            className={`relative ${themeClasses.cardBg} border ${
+              themeClasses.borderColor
+            } rounded-2xl shadow-2xl max-w-2xl mx-4 transform transition-all duration-300 ${
+              showToast ? "scale-100 opacity-100" : "scale-95 opacity-0"
+            }`}
+          >
+            {/* Header del toast */}
+            <div className="flex items-center justify-between p-6 border-b border-gray-700">
+              <h3 className="text-xl font-bold text-blue-400">
+                {toastContent.title}
+              </h3>
+              <button
+                onClick={closeToast}
+                className="text-gray-400 hover:text-white transition-colors p-2 hover:bg-gray-700 rounded-lg"
+              >
+                <svg
+                  className="w-5 h-5"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M6 18L18 6M6 6l12 12"
+                  />
+                </svg>
+              </button>
+            </div>
+
+            {/* Content del toast */}
+            <div className="p-6 max-h-96 overflow-y-auto">
+              <div className={`${themeClasses.text} space-y-4`}>
+                {toastContent.content.split("\n").map((line, index) => {
+                  if (line.trim() === "") return <br key={index} />;
+
+                  if (line.includes("**") && line.includes(":**")) {
+                    // Títulos de sección
+                    const cleanLine = line
+                      .replace(/\*\*/g, "")
+                      .replace(":", "");
+                    return (
+                      <h4
+                        key={index}
+                        className="text-lg font-semibold text-green-400 flex items-center space-x-2"
+                      >
+                        <span>{cleanLine}</span>
+                      </h4>
+                    );
+                  } else if (line.includes("**")) {
+                    // Subtítulos
+                    const cleanLine = line.replace(/\*\*/g, "");
+                    return (
+                      <h5
+                        key={index}
+                        className="font-medium text-purple-400 mt-3 mb-1"
+                      >
+                        {cleanLine}
+                      </h5>
+                    );
+                  } else if (line.startsWith("•")) {
+                    // Lista de puntos
+                    return (
+                      <p
+                        key={index}
+                        className={`${themeClasses.textSecondary} ml-4 flex items-start space-x-2`}
+                      >
+                        <span className="text-blue-400 mt-1">•</span>
+                        <span>{line.substring(1).trim()}</span>
+                      </p>
+                    );
+                  } else if (line.trim().length > 0) {
+                    // Texto normal
+                    return (
+                      <p key={index} className={themeClasses.textSecondary}>
+                        {line.trim()}
+                      </p>
+                    );
+                  }
+                  return null;
+                })}
+              </div>
+            </div>
+
+            {/* Footer del toast */}
+            <div className="px-6 py-4 border-t border-gray-700 flex justify-end">
+              <button
+                onClick={closeToast}
+                className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-medium transition-all duration-200 hover:scale-105"
+              >
+                Entendido
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
