@@ -16,7 +16,7 @@ import {
   onValue,
   serverTimestamp,
 } from "firebase/database";
-import { useTheme } from "./contexts/SettingsContext"; // Tu contexto correcto
+import { useTheme } from "./contexts/SettingsContext";
 import { useAuthState } from "react-firebase-hooks/auth";
 import { auth, database } from "../../../firebase/config";
 
@@ -168,7 +168,9 @@ export const juegosBaseDatos: Juego[] = [
   },
 ];
 
-export const Juegos: React.FC = () => {
+export const Juegos: React.FC<{
+  onNavigateToSection?: (section: string) => void;
+}> = ({ onNavigateToSection }) => {
   const [user, loading] = useAuthState(auth);
   const [juegos] = useState<Juego[]>(juegosBaseDatos);
   const [juegosFiltrados, setJuegosFiltrados] =
@@ -307,6 +309,31 @@ export const Juegos: React.FC = () => {
     const miembroForo = !(datosUsuario[juegoId]?.miembroForo || false);
     await actualizarDatosFirebase(juegoId, { miembroForo });
     setModalForo(null);
+  };
+
+  // Navegar al foro del juego
+  const navegarAForoJuego = async (juegoId: string, nombreJuego: string) => {
+    // Primero, asegurarse de que el usuario es miembro del foro
+    const datosJuego = datosUsuario[juegoId];
+    if (!datosJuego?.miembroForo) {
+      await actualizarDatosFirebase(juegoId, { miembroForo: true });
+    }
+
+    // Si tenemos session storage, guardar el juego seleccionado
+    if (typeof window !== "undefined" && window.sessionStorage) {
+      sessionStorage.setItem(
+        "selectedGameForForum",
+        JSON.stringify({
+          id: juegoId,
+          name: nombreJuego,
+        })
+      );
+    }
+
+    // Navegar a la sección de foros
+    if (onNavigateToSection) {
+      onNavigateToSection("foros");
+    }
   };
 
   // Calcular precio con descuento
@@ -528,7 +555,15 @@ export const Juegos: React.FC = () => {
 
                       {juego.tieneForo && (
                         <button
-                          onClick={() => setModalForo(juego.id)}
+                          onClick={() => {
+                            if (datosJuego.miembroForo) {
+                              // Si ya es miembro, ir directamente al foro
+                              navegarAForoJuego(juego.id, juego.nombre);
+                            } else {
+                              // Si no es miembro, mostrar modal
+                              setModalForo(juego.id);
+                            }
+                          }}
                           className={`flex-1 flex items-center justify-center gap-1 px-3 py-2 rounded-md text-sm transition-colors duration-200 text-white ${
                             datosJuego.miembroForo
                               ? "bg-green-600 hover:bg-green-700"
@@ -536,7 +571,7 @@ export const Juegos: React.FC = () => {
                           }`}
                         >
                           <MessageSquare className="w-4 h-4" />
-                          {datosJuego.miembroForo ? "Foro ✓" : "Unirse"}
+                          {datosJuego.miembroForo ? "Ir al Foro" : "Unirse"}
                         </button>
                       )}
                     </div>
@@ -600,42 +635,43 @@ export const Juegos: React.FC = () => {
       )}
 
       {/* Modal para unirse al foro */}
-      {modalForo && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div
-            className={`${themeClasses.cardBg} p-6 rounded-lg max-w-md w-full mx-4 border ${themeClasses.borderColor}`}
-          >
-            <h3 className={`text-xl font-bold mb-4 ${themeClasses.text}`}>
-              {datosUsuario[modalForo]?.miembroForo
-                ? "Salir del Foro"
-                : "Unirse al Foro"}
-            </h3>
-            <p className={`${themeClasses.textSecondary} mb-4`}>
-              {datosUsuario[modalForo]?.miembroForo
-                ? "¿Estás seguro de que quieres salir del foro de este juego?"
-                : "¿Quieres unirte al foro de este juego para participar en discusiones?"}
-            </p>
-            <div className="flex gap-3">
-              <button
-                onClick={() => toggleMiembroForo(modalForo)}
-                className={`flex-1 px-4 py-2 rounded-md transition-colors duration-200 text-white ${
-                  datosUsuario[modalForo]?.miembroForo
-                    ? "bg-red-600 hover:bg-red-700"
-                    : "bg-green-600 hover:bg-green-700"
-                }`}
+      {modalForo &&
+        (() => {
+          const juegoForo = juegos.find((j) => j.id === modalForo);
+          if (!juegoForo) return null;
+
+          return (
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+              <div
+                className={`${themeClasses.cardBg} p-6 rounded-lg max-w-md w-full mx-4 border ${themeClasses.borderColor}`}
               >
-                {datosUsuario[modalForo]?.miembroForo ? "Salir" : "Unirse"}
-              </button>
-              <button
-                onClick={() => setModalForo(null)}
-                className={`flex-1 ${themeClasses.cardBg} ${themeClasses.hover} ${themeClasses.text} px-4 py-2 rounded-md transition-colors duration-200 border ${themeClasses.borderColor}`}
-              >
-                Cancelar
-              </button>
+                <h3 className={`text-xl font-bold mb-4 ${themeClasses.text}`}>
+                  Unirse al Foro de {juegoForo.nombre}
+                </h3>
+                <p className={`${themeClasses.textSecondary} mb-6`}>
+                  ¿Quieres unirte al foro de este juego para participar en
+                  discusiones con otros jugadores?
+                </p>
+                <div className="flex gap-3">
+                  <button
+                    onClick={() =>
+                      navegarAForoJuego(juegoForo.id, juegoForo.nombre)
+                    }
+                    className="flex-1 bg-purple-700 hover:bg-purple-600 text-white px-4 py-2 rounded-md transition-colors duration-200"
+                  >
+                    Unirse y Continuar
+                  </button>
+                  <button
+                    onClick={() => setModalForo(null)}
+                    className={`flex-1 ${themeClasses.cardBg} ${themeClasses.hover} ${themeClasses.text} px-4 py-2 rounded-md transition-colors duration-200 border ${themeClasses.borderColor}`}
+                  >
+                    Cancelar
+                  </button>
+                </div>
+              </div>
             </div>
-          </div>
-        </div>
-      )}
+          );
+        })()}
     </div>
   );
 };

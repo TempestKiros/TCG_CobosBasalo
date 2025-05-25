@@ -17,6 +17,12 @@ const Dashboard: React.FC = () => {
     "perfil" | "horarios" | "juegos" | "anuncios" | "foros" | "ajustes"
   >("perfil");
 
+  // Estado para manejar la navegación a foros de juegos específicos
+  const [selectedGameForForum, setSelectedGameForForum] = useState<{
+    id: string;
+    name: string;
+  } | null>(null);
+
   // Usamos el nuevo hook de horarios que se conecta a MongoDB
   const {
     horarios,
@@ -41,12 +47,33 @@ const Dashboard: React.FC = () => {
     }
   };
 
+  // Función para manejar la navegación desde juegos
+  const handleNavigateFromGames = (
+    section: string,
+    gameData?: { id: string; name: string }
+  ) => {
+    if (section === "foros" && gameData) {
+      console.log("🎮 Navegando al foro del juego:", gameData);
+      setSelectedGameForForum(gameData);
+    }
+    setSection(section as any);
+  };
+
+  // Limpiar la selección de juego cuando se cambie de sección
+  useEffect(() => {
+    if (section !== "foros") {
+      setSelectedGameForForum(null);
+    }
+  }, [section]);
+
   // Debug logs
   console.log("🏠 Dashboard renderizado:", {
     userId: user?.uid,
     totalHorarios: horarios.length,
     loading: horariosLoading,
     error: horariosError,
+    currentSection: section,
+    selectedGameForForum,
   });
 
   if (isLoading || !user) return <div>Cargando...</div>;
@@ -133,9 +160,21 @@ const Dashboard: React.FC = () => {
           </>
         )}
 
-        {section === "juegos" && <Juegos />}
+        {section === "juegos" && (
+          <Juegos
+            onNavigateToSection={(targetSection: string) => {
+              // Si es una navegación simple, solo cambiar de sección
+              if (typeof targetSection === "string") {
+                setSection(targetSection as any);
+              }
+            }}
+          />
+        )}
+
         {section === "anuncios" && !isAnonymous && <Anuncios />}
+
         {section === "ajustes" && !isAnonymous && <Ajustes user={user} />}
+
         {section === "foros" && !isAnonymous && <ForosSection />}
 
         {(section === "anuncios" ||

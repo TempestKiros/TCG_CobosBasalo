@@ -27,11 +27,14 @@ import {
   User as UserIcon,
   Trash2,
   X,
+  Gamepad,
 } from "lucide-react";
 
 // 🏗️ Interfaces y Types
 interface ForosSectionProps {
   user: User;
+  selectedGameId?: string;
+  selectedGameName?: string;
 }
 
 interface UserData {
@@ -46,6 +49,7 @@ interface UserData {
 
 interface ForumTopic {
   id: string;
+  gameId?: number; // ID del juego asociado, si aplica
   title: string;
   content: string;
   author: string;
@@ -346,9 +350,23 @@ const initialCategories = [
     topics: 67,
     posts: 445,
   },
+  // Nueva categoría para foros de juegos
+  {
+    id: 5,
+    name: "Foros de Juegos",
+    description: "Discusiones específicas sobre juegos",
+    icon: Gamepad,
+    color: "from-purple-600 to-pink-600",
+    topics: 0,
+    posts: 0,
+  },
 ];
 
-export const ForosSection: React.FC<ForosSectionProps> = ({ user }) => {
+export const ForosSection: React.FC<ForosSectionProps> = ({
+  user,
+  selectedGameId,
+  selectedGameName,
+}) => {
   const theme = useTheme();
 
   // 📊 Estados de navegación
@@ -520,6 +538,14 @@ export const ForosSection: React.FC<ForosSectionProps> = ({ user }) => {
     };
   }, [db]);
 
+  useEffect(() => {
+    if (selectedGameId && selectedGameName) {
+      // Navegar directamente al foro del juego
+      setCurrentView("game-forum");
+      setSelectedCategory(initialCategories.find((cat) => cat.id === 5)); // Categoría de foros de juegos
+    }
+  }, [selectedGameId, selectedGameName]);
+
   // Función para crear datos de ejemplo
   const createSampleData = async () => {
     if (!userData) return;
@@ -586,42 +612,6 @@ export const ForosSection: React.FC<ForosSectionProps> = ({ user }) => {
       console.error("Error creating sample data:", error);
     } finally {
       setLoading(false);
-    }
-  };
-  const createNewTopic = async () => {
-    if (!newTopicTitle.trim() || !newTopicContent.trim() || !userData) return;
-
-    try {
-      const topicsRef = ref(db, "forumTopics");
-      const newTopicRef = push(topicsRef);
-
-      const newTopic: Omit<ForumTopic, "id"> = {
-        title: newTopicTitle.trim(),
-        content: newTopicContent.trim(),
-        author: userData.username,
-        authorAvatar: userData.avatar,
-        authorId: user.uid,
-        categoryId: selectedCategory.id,
-        createdAt: Date.now(),
-        replies: 0,
-        views: 0,
-        likes: 0,
-        likedBy: [],
-        hot: false,
-        pinned: false,
-        posts: [],
-      };
-
-      await set(newTopicRef, newTopic);
-
-      // Reset form
-      setNewTopicTitle("");
-      setNewTopicContent("");
-      setShowNewTopicForm(false);
-
-      console.log("Topic created successfully");
-    } catch (error) {
-      console.error("Error creating topic:", error);
     }
   };
 
@@ -1294,11 +1284,136 @@ export const ForosSection: React.FC<ForosSectionProps> = ({ user }) => {
         return <TopicsView />;
       case "thread":
         return <ThreadView />;
+      case "game-forum":
+        return <GameForumView />;
       default:
         return <CategoriesView />;
     }
   };
 
+  const GameForumView = () => {
+    if (!selectedGameId || !selectedGameName) return null;
+
+    const gameTopics = topics.filter(
+      (topic) =>
+        topic.categoryId === 5 && topic.gameId === Number(selectedGameId)
+    );
+    return (
+      <div className={`min-h-screen ${theme.bg} ${theme.text}`}>
+        {/* Header */}
+        <div className={`${theme.cardBg} border-b ${theme.border} p-6`}>
+          <div className="max-w-6xl mx-auto">
+            <div className="flex items-center gap-4 mb-4">
+              <button
+                onClick={() => {
+                  setCurrentView("categories");
+                  // Limpiar selección de juego
+                }}
+                className={`p-2 rounded-lg ${theme.hover} transition-colors`}
+              >
+                <ArrowLeft size={20} />
+              </button>
+
+              <div
+                className={`w-10 h-10 rounded-lg bg-gradient-to-br from-purple-600 to-pink-600 flex items-center justify-center`}
+              >
+                <Gamepad size={20} className="text-white" />
+              </div>
+
+              <div>
+                <h1 className="text-2xl font-bold">
+                  Foro de {selectedGameName}
+                </h1>
+                <p className={theme.textSecondary}>
+                  Discusiones y comunidad de {selectedGameName}
+                </p>
+              </div>
+            </div>
+
+            <button
+              onClick={() => setShowNewTopicForm(true)}
+              className="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-lg flex items-center gap-2 transition-colors"
+            >
+              <Plus size={16} />
+              Nuevo Tema
+            </button>
+          </div>
+        </div>
+
+        <div className="max-w-6xl mx-auto p-6">
+          {/* Topics List */}
+          <div className="space-y-4">
+            {gameTopics.map((topic) => (
+              <div
+                key={topic.id}
+                onClick={() => {
+                  setSelectedTopic(topic);
+                  setCurrentView("thread");
+                }}
+                className={`${theme.cardBg} border ${theme.border} rounded-lg p-6 cursor-pointer ${theme.hover} transition-colors`}
+              >
+                {/* ... contenido del topic ... */}
+              </div>
+            ))}
+          </div>
+
+          {gameTopics.length === 0 && (
+            <div className="text-center py-12">
+              <MessageCircle
+                size={48}
+                className={`${theme.textMuted} mx-auto mb-4`}
+              />
+              <p className={theme.textMuted}>
+                No hay temas en el foro de {selectedGameName} aún.
+              </p>
+              <p className={theme.textMuted}>¡Sé el primero en crear uno!</p>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  };
+  // Actualiza createNewTopic para incluir gameId cuando sea necesario
+  const createNewTopic = async () => {
+    if (!newTopicTitle.trim() || !newTopicContent.trim() || !userData) return;
+
+    try {
+      const topicsRef = ref(db, "forumTopics");
+      const newTopicRef = push(topicsRef);
+
+      const newTopic: Omit<ForumTopic, "id"> = {
+        title: newTopicTitle.trim(),
+        content: newTopicContent.trim(),
+        author: userData.username,
+        authorAvatar: userData.avatar,
+        authorId: user.uid,
+        categoryId: currentView === "game-forum" ? 5 : selectedCategory.id,
+        gameId:
+          currentView === "game-forum" && selectedGameId !== undefined
+            ? Number(selectedGameId)
+            : undefined, // Añadir gameId
+        createdAt: Date.now(),
+        replies: 0,
+        views: 0,
+        likes: 0,
+        likedBy: [],
+        hot: false,
+        pinned: false,
+        posts: [],
+      };
+
+      await set(newTopicRef, newTopic);
+
+      // Reset form
+      setNewTopicTitle("");
+      setNewTopicContent("");
+      setShowNewTopicForm(false);
+
+      console.log("Topic created successfully");
+    } catch (error) {
+      console.error("Error creating topic:", error);
+    }
+  };
   // 🎨 Elementos UI Flotantes
   return (
     <>
