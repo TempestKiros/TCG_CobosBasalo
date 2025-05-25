@@ -18,6 +18,8 @@ import {
   RefreshCw,
 } from "lucide-react";
 import { useSettings } from "./contexts/SettingsContext";
+import { useNavigate } from "react-router-dom"; // Removido BrowserRouter
+import { getAuth, signOut } from "firebase/auth"; // Importación corregida para v9+
 
 interface UserType {
   displayName?: string | null;
@@ -49,6 +51,7 @@ export const Ajustes: React.FC<AjustesProps> = ({ user }) => {
     text: string;
     type: "success" | "error";
   } | null>(null);
+  const navigate = useNavigate();
 
   // Estados locales para formularios
   const [profileForm, setProfileForm] = useState({
@@ -141,14 +144,41 @@ export const Ajustes: React.FC<AjustesProps> = ({ user }) => {
     }
   };
 
+  // Estados para modal personalizado
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
+
+  // Función de logout corregida
   const handleLogout = async () => {
+    if (loading) return; // Evitar múltiples clics
+
+    // Mostrar modal personalizado en lugar de confirm
+    setShowLogoutModal(true);
+  };
+
+  // Función que ejecuta el logout real
+  const executeLogout = async () => {
+    setShowLogoutModal(false);
     setLoading(true);
+    setMessage(null);
+
     try {
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      // Obtener la instancia de auth correctamente
+      const auth = getAuth();
+      await signOut(auth);
+
       setMessage({ text: "Sesión cerrada correctamente", type: "success" });
-    } catch (error) {
-      console.error("Error al cerrar sesión:", error);
-      setMessage({ text: "Error al cerrar sesión", type: "error" });
+      console.log("Logout exitoso");
+
+      // Redirigir después de un breve delay
+      setTimeout(() => {
+        navigate("/login", { replace: true }); // replace: true evita volver atrás
+      }, 1000);
+    } catch (error: any) {
+      console.error("Error detallado al cerrar sesión:", error);
+      setMessage({
+        text: `Error al cerrar sesión: ${error.message || "Error desconocido"}`,
+        type: "error",
+      });
     } finally {
       setLoading(false);
     }
@@ -214,6 +244,11 @@ export const Ajustes: React.FC<AjustesProps> = ({ user }) => {
   };
 
   const handleResetSettings = () => {
+    const confirmReset = window.confirm(
+      "¿Estás seguro de que quieres restablecer toda la configuración?"
+    );
+    if (!confirmReset) return;
+
     resetSettings();
     setMessage({
       text: "Configuración restablecida a valores por defecto",
@@ -280,6 +315,7 @@ export const Ajustes: React.FC<AjustesProps> = ({ user }) => {
           </div>
         )}
 
+        {/* Main content - BrowserRouter removido */}
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
           {/* Sidebar */}
           <div className="lg:col-span-1">
@@ -714,18 +750,6 @@ export const Ajustes: React.FC<AjustesProps> = ({ user }) => {
                             Idioma:
                           </span>
                           <span className="ml-2 text-blue-400 font-semibold">
-                            {settings.general.idioma === "es"
-                              ? "Español"
-                              : settings.general.idioma === "en"
-                              ? "English"
-                              : "Français"}
-                          </span>
-                        </div>
-                        <div>
-                          <span className={themeClasses.textSecondary}>
-                            Formato 24h:
-                          </span>
-                          <span className="ml-2 text-blue-400 font-semibold">
                             {settings.general.formato24h
                               ? "Activado"
                               : "Desactivado"}
@@ -787,6 +811,54 @@ export const Ajustes: React.FC<AjustesProps> = ({ user }) => {
           </div>
         </div>
       </div>
+
+      {/* Modal de confirmación personalizado */}
+      {showLogoutModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 animate-in fade-in duration-200">
+          <div
+            className={`${themeClasses.cardBg} rounded-lg p-6 max-w-md mx-4 shadow-2xl animate-in zoom-in-95 duration-200`}
+          >
+            <div className="flex items-center space-x-3 mb-4">
+              <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center">
+                <LogOut className="w-6 h-6 text-red-600" />
+              </div>
+              <div>
+                <h3 className="text-lg font-bold">Cerrar sesión</h3>
+                <p className={`text-sm ${themeClasses.textSecondary}`}>
+                  Esta acción cerrará tu sesión actual
+                </p>
+              </div>
+            </div>
+
+            <p className={`mb-6 ${themeClasses.textSecondary}`}>
+              ¿Estás seguro de que quieres cerrar sesión? Tendrás que volver a
+              iniciar sesión para acceder a tu cuenta.
+            </p>
+
+            <div className="flex space-x-3 justify-end">
+              <button
+                onClick={() => setShowLogoutModal(false)}
+                className={`px-4 py-2 rounded-lg border ${themeClasses.borderColor} ${themeClasses.textSecondary} hover:bg-gray-100 hover:bg-opacity-10 transition-all duration-200`}
+                disabled={loading}
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={executeLogout}
+                disabled={loading}
+                className="bg-red-600 hover:bg-red-700 disabled:bg-red-800 text-white px-4 py-2 rounded-lg font-semibold transition-all duration-200 flex items-center space-x-2"
+              >
+                {loading ? (
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                ) : (
+                  <LogOut className="w-4 h-4" />
+                )}
+                <span>Cerrar sesión</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

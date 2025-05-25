@@ -1,6 +1,8 @@
 {
-  "short_name": "React App",
-  "name": "Create React App Sample",
+  "short_name": "DeepTime",
+  "name": "Pinguin DeepTime",
+  "description": "A Pinguin DeepTime application for exploring geological time scales.",
+  "version": "1.0.0",
   "icons": [
     {
       "src": "favicon.ico",
