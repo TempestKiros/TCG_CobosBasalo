@@ -509,7 +509,9 @@ export const Perfil: React.FC<PerfilProps> = ({ user }) => {
 
   // Avatar por defecto adaptativo al tema
   const avatarUrl =
-    userData?.avatar || user.photoURL || "https://i.pravatar.cc/150?img=3";
+    userData?.avatar ||
+    user.photoURL ||
+    "https://i.pinimg.com/736x/9b/8f/30/9b8f30a05521fd394762e12b836fd2f7.jpg";
   const displayName = userData?.username || user.displayName || "Usuario";
 
   const getContributionColor = (level: number) => {
