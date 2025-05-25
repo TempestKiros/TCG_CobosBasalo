@@ -31,6 +31,22 @@ interface UserData {
   status?: string;
 }
 
+interface TimeSlot {
+  id: string;
+  startTime: string;
+  endTime: string;
+  activity: string;
+  description?: string;
+  color: string;
+}
+
+interface DailySchedule {
+  day: string;
+  userId: string;
+  timeSlots: TimeSlot[];
+  updatedAt: Date;
+}
+
 export const Perfil: React.FC<PerfilProps> = ({ user }) => {
   const { settings } = useSettings();
   const { theme, themeClasses } = useTheme();
@@ -49,6 +65,13 @@ export const Perfil: React.FC<PerfilProps> = ({ user }) => {
   });
   const [showToast, setShowToast] = useState(false);
   const [toastContent, setToastContent] = useState({ title: "", content: "" });
+  const [showScheduleModal, setShowScheduleModal] = useState(false);
+  const [selectedDay, setSelectedDay] = useState<string>("");
+  const [dailySchedules, setDailySchedules] = useState<{
+    [key: string]: DailySchedule;
+  }>({});
+  const [editingTimeSlot, setEditingTimeSlot] = useState<TimeSlot | null>(null);
+  const [isNewTimeSlot, setIsNewTimeSlot] = useState(false);
 
   const gruposBotones = [
     ["Lunes", "Martes"],
@@ -185,7 +208,22 @@ export const Perfil: React.FC<PerfilProps> = ({ user }) => {
       }
     };
 
+    const fetchSchedules = async () => {
+      const db = getDatabase();
+      const schedulesRef = ref(db, `horarios-diarios/${user.uid}`);
+
+      try {
+        const snapshot = await get(schedulesRef);
+        if (snapshot.exists()) {
+          setDailySchedules(snapshot.val());
+        }
+      } catch (error) {
+        console.error("Error fetching schedules:", error);
+      }
+    };
+
     fetchUserData();
+    fetchSchedules();
   }, [user.uid]);
 
   const handleSaveDescription = async () => {
@@ -347,6 +385,126 @@ export const Perfil: React.FC<PerfilProps> = ({ user }) => {
     setTimeout(() => {
       setToastContent({ title: "", content: "" });
     }, 300);
+  };
+
+  const showDaySchedule = (day: string) => {
+    setSelectedDay(day);
+    setShowScheduleModal(true);
+  };
+
+  const closeScheduleModal = () => {
+    setShowScheduleModal(false);
+    setEditingTimeSlot(null);
+    setIsNewTimeSlot(false);
+  };
+
+  const saveSchedule = async (day: string, timeSlots: TimeSlot[]) => {
+    const db = getDatabase();
+    const scheduleRef = ref(db, `horarios-diarios/${user.uid}/${day}`);
+
+    try {
+      const scheduleData: DailySchedule = {
+        day,
+        userId: user.uid,
+        timeSlots,
+        updatedAt: new Date(),
+      };
+
+      await set(scheduleRef, scheduleData);
+      setDailySchedules((prev) => ({
+        ...prev,
+        [day]: scheduleData,
+      }));
+    } catch (error) {
+      console.error("Error saving schedule:", error);
+    }
+  };
+
+  const addTimeSlot = () => {
+    const newTimeSlot: TimeSlot = {
+      id: Date.now().toString(),
+      startTime: "09:00",
+      endTime: "10:00",
+      activity: "",
+      description: "",
+      color: "#3B82F6",
+    };
+    setEditingTimeSlot(newTimeSlot);
+    setIsNewTimeSlot(true);
+    // Temporalmente ocultar el modal de horario
+    setShowScheduleModal(false);
+  };
+
+  const editTimeSlot = (timeSlot: TimeSlot) => {
+    setEditingTimeSlot(timeSlot);
+    setIsNewTimeSlot(false);
+    // Temporalmente ocultar el modal de horario
+    setShowScheduleModal(false);
+  };
+
+  const saveTimeSlot = async (timeSlot: TimeSlot) => {
+    if (!timeSlot.activity || !timeSlot.startTime || !timeSlot.endTime) {
+      return;
+    }
+
+    const currentSchedule = dailySchedules[selectedDay] || { timeSlots: [] };
+    let updatedTimeSlots;
+
+    if (isNewTimeSlot) {
+      updatedTimeSlots = [...currentSchedule.timeSlots, timeSlot];
+    } else {
+      updatedTimeSlots = currentSchedule.timeSlots.map((slot) =>
+        slot.id === timeSlot.id ? timeSlot : slot
+      );
+    }
+
+    // Ordenar por hora de inicio
+    updatedTimeSlots.sort((a, b) => a.startTime.localeCompare(b.startTime));
+
+    await saveSchedule(selectedDay, updatedTimeSlots);
+
+    // Cerrar editor y mostrar modal de horario nuevamente
+    setEditingTimeSlot(null);
+    setIsNewTimeSlot(false);
+    setShowScheduleModal(true);
+  };
+
+  const cancelTimeSlotEdit = () => {
+    setEditingTimeSlot(null);
+    setIsNewTimeSlot(false);
+    setShowScheduleModal(true);
+  };
+
+  const deleteTimeSlot = async (timeSlotId: string) => {
+    const currentSchedule = dailySchedules[selectedDay] || { timeSlots: [] };
+    const updatedTimeSlots = currentSchedule.timeSlots.filter(
+      (slot) => slot.id !== timeSlotId
+    );
+    await saveSchedule(selectedDay, updatedTimeSlots);
+  };
+
+  const getSchedulePreview = (day: string) => {
+    const schedule = dailySchedules[day];
+    if (!schedule || schedule.timeSlots.length === 0) {
+      return [
+        {
+          name: "Sin horarios",
+          time: "Agregar actividades",
+          color: "bg-gray-500",
+        },
+        {
+          name: "Click para editar",
+          time: "Personalizar",
+          color: "bg-gray-600",
+        },
+      ];
+    }
+
+    return schedule.timeSlots.slice(0, 2).map((slot) => ({
+      name: slot.activity || "Actividad",
+      time: `${slot.startTime} - ${slot.endTime}`,
+      color: slot.color,
+    }));
   };
 
   // Avatar por defecto adaptativo al tema
@@ -604,42 +762,47 @@ export const Perfil: React.FC<PerfilProps> = ({ user }) => {
             </h2>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {gruposBotones.flat().map((dia, index) => (
-                <div
-                  key={dia}
-                  className={`${themeClasses.cardBg} rounded-xl p-6 border ${themeClasses.borderColor} ${themeClasses.hover} transition-all duration-300 hover:scale-105 shadow-lg cursor-pointer`}
-                  onClick={() => showScheduleInfo(dia)}
-                >
-                  <h3 className="text-xl font-semibold mb-4 flex items-center space-x-2">
-                    <span className="text-blue-400">📅</span>
-                    <span>Horarios {dia}</span>
-                  </h3>
-                  <div className="space-y-3">
-                    <div
-                      className={`flex items-center ${themeClasses.inputBg} rounded-lg p-3`}
-                    >
-                      <span className="w-3 h-3 bg-yellow-500 rounded-full mr-3"></span>
-                      <span className="font-medium">TheClone</span>
-                      <span
-                        className={`ml-auto text-xs ${themeClasses.textSecondary} bg-yellow-500/20 px-2 py-1 rounded`}
-                      >
-                        LEVEL 24
-                      </span>
-                    </div>
-                    <div
-                      className={`flex items-center ${themeClasses.inputBg} rounded-lg p-3`}
-                    >
-                      <span className="w-3 h-3 bg-blue-500 rounded-full mr-3"></span>
-                      <span className="font-medium">DeepPlayer</span>
+              {gruposBotones.flat().map((dia, index) => {
+                const preview = getSchedulePreview(dia);
+                return (
+                  <div
+                    key={dia}
+                    className={`${themeClasses.cardBg} rounded-xl p-6 border ${themeClasses.borderColor} ${themeClasses.hover} transition-all duration-300 hover:scale-105 shadow-lg cursor-pointer`}
+                    onClick={() => showDaySchedule(dia)}
+                  >
+                    <h3 className="text-xl font-semibold mb-4 flex items-center space-x-2">
+                      <span className="text-blue-400">📅</span>
+                      <span>Horarios {dia}</span>
                       <span
                         className={`ml-auto text-xs ${themeClasses.textSecondary} bg-blue-500/20 px-2 py-1 rounded`}
                       >
-                        LEVEL 18
+                        {dailySchedules[dia]?.timeSlots.length || 0} actividades
                       </span>
+                    </h3>
+                    <div className="space-y-3">
+                      {preview.map((item, idx) => (
+                        <div
+                          key={idx}
+                          className={`flex items-center ${themeClasses.inputBg} rounded-lg p-3`}
+                        >
+                          <span
+                            className={`w-3 h-3 rounded-full mr-3`}
+                            style={{ backgroundColor: item.color }}
+                          ></span>
+                          <div className="flex-1">
+                            <span className="font-medium">{item.name}</span>
+                            <div
+                              className={`text-xs ${themeClasses.textSecondary}`}
+                            >
+                              {item.time}
+                            </div>
+                          </div>
+                        </div>
+                      ))}
                     </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
 
@@ -931,6 +1094,310 @@ export const Perfil: React.FC<PerfilProps> = ({ user }) => {
               >
                 Entendido
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Horario Diario */}
+      {showScheduleModal && !editingTimeSlot && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div
+            className="absolute inset-0 bg-black bg-opacity-50 backdrop-blur-sm"
+            onClick={closeScheduleModal}
+          ></div>
+
+          <div
+            className={`relative ${themeClasses.cardBg} border ${themeClasses.borderColor} rounded-2xl shadow-2xl max-w-4xl w-full mx-4 max-h-[90vh] overflow-hidden`}
+          >
+            {/* Header */}
+            <div className="flex items-center justify-between p-6 border-b border-gray-700">
+              <h3 className="text-2xl font-bold text-blue-400 flex items-center space-x-2">
+                <Calendar className="w-6 h-6" />
+                <span>Horario de {selectedDay}</span>
+              </h3>
+              <button
+                onClick={closeScheduleModal}
+                className="text-gray-400 hover:text-white transition-colors p-2 hover:bg-gray-700 rounded-lg"
+              >
+                <svg
+                  className="w-6 h-6"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M6 18L18 6M6 6l12 12"
+                  />
+                </svg>
+              </button>
+            </div>
+
+            {/* Content */}
+            <div className="p-6 max-h-[60vh] overflow-y-auto">
+              {/* Timeline del día */}
+              <div className="space-y-4">
+                {(dailySchedules[selectedDay]?.timeSlots || [])
+                  .sort((a, b) => a.startTime.localeCompare(b.startTime))
+                  .map((timeSlot) => (
+                    <div
+                      key={timeSlot.id}
+                      className={`${themeClasses.inputBg} rounded-lg p-4 border-l-4 hover:bg-opacity-80 transition-all`}
+                      style={{ borderLeftColor: timeSlot.color }}
+                    >
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center space-x-3">
+                          <div
+                            className="w-4 h-4 rounded-full"
+                            style={{ backgroundColor: timeSlot.color }}
+                          ></div>
+                          <h4 className="font-semibold text-lg">
+                            {timeSlot.activity}
+                          </h4>
+                          <span
+                            className={`text-sm ${themeClasses.textSecondary} bg-blue-500/20 px-2 py-1 rounded`}
+                          >
+                            {timeSlot.startTime} - {timeSlot.endTime}
+                          </span>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <button
+                            onClick={() => editTimeSlot(timeSlot)}
+                            className="text-blue-400 hover:text-blue-300 p-2 hover:bg-blue-500/20 rounded-lg transition-all"
+                          >
+                            <Edit3 className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => deleteTimeSlot(timeSlot.id)}
+                            className="text-red-400 hover:text-red-300 p-2 hover:bg-red-500/20 rounded-lg transition-all"
+                          >
+                            <svg
+                              className="w-4 h-4"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                              />
+                            </svg>
+                          </button>
+                        </div>
+                      </div>
+                      {timeSlot.description && (
+                        <p
+                          className={`text-sm ${themeClasses.textSecondary} ml-7`}
+                        >
+                          {timeSlot.description}
+                        </p>
+                      )}
+                    </div>
+                  ))}
+
+                {/* Mensaje cuando no hay horarios */}
+                {(!dailySchedules[selectedDay] ||
+                  dailySchedules[selectedDay].timeSlots.length === 0) && (
+                  <div
+                    className={`${themeClasses.inputBg} rounded-lg p-8 text-center border-2 border-dashed ${themeClasses.borderColor}`}
+                  >
+                    <Calendar className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                    <h4 className="text-lg font-medium text-gray-400 mb-2">
+                      Sin actividades programadas
+                    </h4>
+                    <p className={`text-sm ${themeClasses.textSecondary} mb-4`}>
+                      Agrega tu primera actividad para organizar tu día
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="px-6 py-4 border-t border-gray-700 flex justify-between items-center">
+              <span className={`text-sm ${themeClasses.textSecondary}`}>
+                {dailySchedules[selectedDay]?.timeSlots.length || 0} actividades
+                programadas
+              </span>
+              <button
+                onClick={addTimeSlot}
+                className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-medium transition-all duration-200 hover:scale-105 flex items-center space-x-2"
+              >
+                <svg
+                  className="w-4 h-4"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 4v16m8-8H4"
+                  />
+                </svg>
+                <span>Agregar Actividad</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Edición de Franja Horaria */}
+      {editingTimeSlot && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center">
+          <div
+            className="absolute inset-0 bg-black bg-opacity-75 backdrop-blur-sm"
+            onClick={() => {
+              setEditingTimeSlot(null);
+              setIsNewTimeSlot(false);
+            }}
+          ></div>
+
+          <div
+            className={`relative ${themeClasses.cardBg} border ${themeClasses.borderColor} rounded-2xl shadow-2xl max-w-md w-full mx-4 z-10`}
+          >
+            <div className="p-6">
+              <h4 className="text-xl font-bold text-green-400 mb-4">
+                {isNewTimeSlot ? "Nueva Actividad" : "Editar Actividad"}
+              </h4>
+
+              <div className="space-y-4">
+                <div>
+                  <label
+                    className={`block text-sm font-medium ${themeClasses.text} mb-2`}
+                  >
+                    Nombre de la Actividad
+                  </label>
+                  <input
+                    type="text"
+                    value={editingTimeSlot.activity}
+                    onChange={(e) =>
+                      setEditingTimeSlot({
+                        ...editingTimeSlot,
+                        activity: e.target.value,
+                      })
+                    }
+                    className={`w-full ${themeClasses.inputBg} ${themeClasses.text} rounded-lg px-4 py-2 border ${themeClasses.borderColor} focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20`}
+                    placeholder="Ej: Sesión de gaming, Streaming, etc."
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label
+                      className={`block text-sm font-medium ${themeClasses.text} mb-2`}
+                    >
+                      Hora de Inicio
+                    </label>
+                    <input
+                      type="time"
+                      value={editingTimeSlot.startTime}
+                      onChange={(e) =>
+                        setEditingTimeSlot({
+                          ...editingTimeSlot,
+                          startTime: e.target.value,
+                        })
+                      }
+                      className={`w-full ${themeClasses.inputBg} ${themeClasses.text} rounded-lg px-4 py-2 border ${themeClasses.borderColor} focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20`}
+                    />
+                  </div>
+                  <div>
+                    <label
+                      className={`block text-sm font-medium ${themeClasses.text} mb-2`}
+                    >
+                      Hora de Fin
+                    </label>
+                    <input
+                      type="time"
+                      value={editingTimeSlot.endTime}
+                      onChange={(e) =>
+                        setEditingTimeSlot({
+                          ...editingTimeSlot,
+                          endTime: e.target.value,
+                        })
+                      }
+                      className={`w-full ${themeClasses.inputBg} ${themeClasses.text} rounded-lg px-4 py-2 border ${themeClasses.borderColor} focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20`}
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label
+                    className={`block text-sm font-medium ${themeClasses.text} mb-2`}
+                  >
+                    Color
+                  </label>
+                  <div className="flex space-x-2">
+                    {[
+                      "#3B82F6",
+                      "#10B981",
+                      "#F59E0B",
+                      "#EF4444",
+                      "#8B5CF6",
+                      "#06B6D4",
+                    ].map((color) => (
+                      <button
+                        key={color}
+                        onClick={() =>
+                          setEditingTimeSlot({ ...editingTimeSlot, color })
+                        }
+                        className={`w-8 h-8 rounded-full border-2 ${
+                          editingTimeSlot.color === color
+                            ? "border-white"
+                            : "border-gray-600"
+                        } transition-all hover:scale-110`}
+                        style={{ backgroundColor: color }}
+                      />
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <label
+                    className={`block text-sm font-medium ${themeClasses.text} mb-2`}
+                  >
+                    Descripción (Opcional)
+                  </label>
+                  <textarea
+                    value={editingTimeSlot.description || ""}
+                    onChange={(e) =>
+                      setEditingTimeSlot({
+                        ...editingTimeSlot,
+                        description: e.target.value,
+                      })
+                    }
+                    className={`w-full ${themeClasses.inputBg} ${themeClasses.text} rounded-lg px-4 py-2 border ${themeClasses.borderColor} focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 resize-none`}
+                    rows={3}
+                    placeholder="Descripción adicional..."
+                  />
+                </div>
+              </div>
+
+              <div className="flex justify-end space-x-3 mt-6">
+                <button
+                  onClick={cancelTimeSlotEdit}
+                  className="px-4 py-2 text-gray-400 hover:text-white transition-colors"
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={() => saveTimeSlot(editingTimeSlot)}
+                  disabled={
+                    !editingTimeSlot.activity ||
+                    !editingTimeSlot.startTime ||
+                    !editingTimeSlot.endTime
+                  }
+                  className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white px-6 py-2 rounded-lg font-medium transition-all duration-200 hover:scale-105"
+                >
+                  {isNewTimeSlot ? "Crear" : "Guardar"}
+                </button>
+              </div>
             </div>
           </div>
         </div>

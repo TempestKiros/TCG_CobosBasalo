@@ -1,4 +1,4 @@
-// src/pages/Home/Home.tsx - Versión actualizada con configuración global
+// src/pages/Home/Home.tsx - Versión mejorada con mejor centrado y responsividad
 import React, { useMemo, useEffect, useState } from "react";
 import Slider from "react-slick";
 import Lottie from "lottie-react";
@@ -36,7 +36,7 @@ const FloatingParticles = () => {
   const { theme } = useTheme();
 
   useEffect(() => {
-    const newParticles: Particle[] = Array.from({ length: 50 }, (_, i) => ({
+    const newParticles: Particle[] = Array.from({ length: 30 }, (_, i) => ({
       id: i,
       x: Math.random() * 100,
       y: Math.random() * 100,
@@ -106,7 +106,7 @@ const AnimatedBackground = () => {
         T ${Math.random() * 100} ${Math.random() * 100}`;
     };
 
-    return Array(15)
+    return Array(10)
       .fill(null)
       .map((_, i) => ({
         id: `path-${i}`,
@@ -159,10 +159,10 @@ const AnimatedBackground = () => {
       {/* Efectos de luz ambiental */}
       <motion.div className="fixed inset-0 opacity-30" style={{ y: y1 }}>
         <div
-          className={`absolute top-1/4 left-1/4 w-96 h-96 ${lightEffects.light1} rounded-full blur-3xl`}
+          className={`absolute top-1/4 left-1/4 w-64 h-64 md:w-96 md:h-96 ${lightEffects.light1} rounded-full blur-3xl`}
         />
         <div
-          className={`absolute bottom-1/4 right-1/4 w-96 h-96 ${lightEffects.light2} rounded-full blur-3xl`}
+          className={`absolute bottom-1/4 right-1/4 w-64 h-64 md:w-96 md:h-96 ${lightEffects.light2} rounded-full blur-3xl`}
         />
       </motion.div>
 
@@ -243,11 +243,11 @@ const GameCarousel = ({ side }: { side: "left" | "right" }) => {
   };
 
   return (
-    <div className="hidden lg:block w-[180px] h-screen overflow-hidden relative">
+    <div className="hidden lg:block w-[200px] xl:w-[250px] 2xl:w-[300px] h-screen overflow-hidden relative">
       {/* Efecto de máscara degradada adaptativa */}
       <div className={`absolute inset-0 z-10 ${getMaskGradient()}`} />
 
-      <div className="opacity-40 hover:opacity-60 transition-opacity duration-500">
+      <div className="opacity-30 hover:opacity-50 transition-opacity duration-500">
         <Slider {...sliderSettings}>
           {images.map((src, idx) => (
             <div key={idx} className="relative group">
@@ -275,7 +275,7 @@ export const Home: React.FC = () => {
       case "light":
         return {
           text: "text-gray-900",
-          textSecondary: "text-gray-500",
+          textSecondary: "text-gray-600",
           cardBg: "bg-white/80",
           borderColor: "border-gray-300",
           hover: "hover:bg-gray-100",
@@ -343,150 +343,156 @@ export const Home: React.FC = () => {
         {/* Carousel izquierdo */}
         <GameCarousel side="left" />
 
-        {/* Contenido principal */}
-        <div className="flex-grow flex flex-col items-center justify-center p-8 space-y-12 z-20 relative">
-          {/* Título con efecto mejorado */}
-          <motion.div
-            initial={{ opacity: 0, y: 50 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 1, ease: "easeOut" }}
-            className="text-center space-y-4"
-          >
-            <motion.h1
-              className="text-6xl md:text-8xl lg:text-9xl font-black tracking-tight"
-              whileHover={{ scale: 1.05 }}
-              transition={{ type: "spring", stiffness: 300 }}
+        {/* Contenido principal - MEJORADO PARA CENTRADO */}
+        <div className="flex-1 flex flex-col items-center justify-center px-4 sm:px-6 lg:px-8 py-8 z-20 relative min-h-screen">
+          <div className="w-full max-w-4xl mx-auto text-center space-y-8 sm:space-y-12">
+            {/* Título con efecto mejorado - RESPONSIVE */}
+            <motion.div
+              initial={{ opacity: 0, y: 50 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 1, ease: "easeOut" }}
+              className="space-y-2 sm:space-y-4"
             >
-              <span className="bg-gradient-to-r from-cyan-400 via-purple-400 to-pink-400 bg-clip-text text-transparent animate-pulse">
-                Gestor
-              </span>
-              <br />
-              <span className="bg-gradient-to-r from-pink-400 via-purple-400 to-cyan-400 bg-clip-text text-transparent">
-                Gaming
-              </span>
-            </motion.h1>
+              <motion.h1
+                className="text-4xl sm:text-6xl md:text-7xl lg:text-8xl xl:text-9xl font-black tracking-tight leading-none"
+                whileHover={{ scale: 1.02 }}
+                transition={{ type: "spring", stiffness: 300 }}
+              >
+                <span className="bg-gradient-to-r from-cyan-400 via-purple-400 to-pink-400 bg-clip-text text-transparent animate-pulse">
+                  Deep
+                </span>
+                <br />
+                <span className="bg-gradient-to-r from-pink-400 via-purple-400 to-cyan-400 bg-clip-text text-transparent">
+                  Time
+                </span>
+              </motion.h1>
 
-            <motion.p
-              className={`${themeClasses.textSecondary} text-xl md:text-2xl font-light max-w-2xl leading-relaxed`}
+              <motion.p
+                className={`${themeClasses.textSecondary} text-base sm:text-lg lg:text-xl xl:text-2xl font-light max-w-3xl mx-auto leading-relaxed px-4`}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.5, duration: 1 }}
+              >
+                Explora un mundo de juegos y reseñas, donde la comunidad se une
+                para compartir experiencias y descubrir nuevos títulos. ¡Únete a
+                nosotros!
+              </motion.p>
+            </motion.div>
+
+            {/* Animación Lottie mejorada - RESPONSIVE */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.5, rotate: -30 }}
+              animate={{ opacity: 1, scale: 1, rotate: -15 }}
+              transition={{ duration: 1.2, ease: "backOut", delay: 0.3 }}
+              whileHover={{
+                scale: 1.05,
+                rotate: 0,
+                transition: { type: "spring", stiffness: 300 },
+              }}
+              className="flex justify-center"
+            >
+              <div className="w-32 h-32 sm:w-40 sm:h-40 md:w-48 md:h-48 lg:w-56 lg:h-56 xl:w-64 xl:h-64 relative">
+                {/* Glow effect adaptativo al tema */}
+                <div
+                  className={`absolute inset-0 ${
+                    theme === "light"
+                      ? "bg-gradient-to-r from-blue-500/30 to-purple-500/30"
+                      : theme === "purple"
+                      ? "bg-gradient-to-r from-purple-500/20 to-pink-500/20"
+                      : "bg-gradient-to-r from-cyan-500/20 to-purple-500/20"
+                  } rounded-full blur-2xl animate-pulse`}
+                />
+
+                <Lottie
+                  animationData={sharkAnimation}
+                  loop={true}
+                  className="relative z-10 drop-shadow-2xl transition-all duration-700"
+                />
+              </div>
+            </motion.div>
+
+            {/* Botones mejorados - RESPONSIVE Y CENTRADOS */}
+            <motion.div
+              initial={{ opacity: 0, y: 50 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 1, delay: 0.8 }}
+              className="flex flex-col sm:flex-row gap-4 sm:gap-6 w-full max-w-md sm:max-w-lg mx-auto px-4"
+            >
+              <motion.button
+                onClick={() => navigate("/login")}
+                className={`group relative px-6 sm:px-8 lg:px-10 py-3 sm:py-4 text-base sm:text-lg font-bold rounded-xl sm:rounded-2xl bg-gradient-to-r ${buttonColors.primary} text-white shadow-2xl transition-all duration-500 transform hover:scale-105 hover:-translate-y-1 flex-1`}
+                whileTap={{ scale: 0.95 }}
+                whileHover={{
+                  boxShadow: `0 20px 40px ${buttonColors.shadow1}`,
+                }}
+              >
+                <span className="relative z-10 flex items-center justify-center gap-2">
+                  🎮 Iniciar Sesión
+                </span>
+                <div className="absolute inset-0 rounded-xl sm:rounded-2xl bg-gradient-to-r from-white/0 via-white/20 to-white/0 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+              </motion.button>
+
+              <motion.button
+                onClick={() => navigate("/register")}
+                className={`group relative px-6 sm:px-8 lg:px-10 py-3 sm:py-4 text-base sm:text-lg font-bold rounded-xl sm:rounded-2xl bg-gradient-to-r ${buttonColors.secondary} text-white shadow-2xl transition-all duration-500 transform hover:scale-105 hover:-translate-y-1 flex-1`}
+                whileTap={{ scale: 0.95 }}
+                whileHover={{
+                  boxShadow: `0 20px 40px ${buttonColors.shadow2}`,
+                }}
+              >
+                <span className="relative z-10 flex items-center justify-center gap-2">
+                  ✨ Registrarse
+                </span>
+                <div className="absolute inset-0 rounded-xl sm:rounded-2xl bg-gradient-to-r from-white/0 via-white/20 to-white/0 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+              </motion.button>
+            </motion.div>
+
+            {/* Botón de configuración - RESPONSIVE */}
+            <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              transition={{ delay: 0.5, duration: 1 }}
+              transition={{ delay: 1.2, duration: 1 }}
+              className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4 px-4"
             >
-              Tu biblioteca personal de videojuegos en la nube
-            </motion.p>
-          </motion.div>
+              <motion.button
+                onClick={() => navigate("/ajustes")}
+                className={`${themeClasses.cardBg} ${themeClasses.text} px-4 sm:px-6 py-2 sm:py-3 rounded-full border ${themeClasses.borderColor} ${themeClasses.hover} transition-all duration-300 hover:scale-105 flex items-center gap-2 text-sm sm:text-base`}
+                whileTap={{ scale: 0.95 }}
+              >
+                ⚙️ Configuración
+              </motion.button>
 
-          {/* Animación Lottie mejorada */}
-          <motion.div
-            initial={{ opacity: 0, scale: 0.5, rotate: -30 }}
-            animate={{ opacity: 1, scale: 1, rotate: -15 }}
-            transition={{ duration: 1.2, ease: "backOut", delay: 0.3 }}
-            whileHover={{
-              scale: 1.1,
-              rotate: 0,
-              transition: { type: "spring", stiffness: 300 },
-            }}
-            className="relative"
-          >
-            <div className="w-72 h-72 md:w-96 md:h-96 relative">
-              {/* Glow effect adaptativo al tema */}
               <div
-                className={`absolute inset-0 ${
-                  theme === "light"
-                    ? "bg-gradient-to-r from-blue-500/30 to-purple-500/30"
-                    : theme === "purple"
-                    ? "bg-gradient-to-r from-purple-500/20 to-pink-500/20"
-                    : "bg-gradient-to-r from-cyan-500/20 to-purple-500/20"
-                } rounded-full blur-2xl animate-pulse`}
-              />
+                className={`text-xs sm:text-sm ${themeClasses.textSecondary} text-center sm:text-left`}
+              >
+                Tema actual:{" "}
+                <span className="text-blue-400 font-semibold">
+                  {theme === "light"
+                    ? "☀️ Claro"
+                    : theme === "dark"
+                    ? "🌙 Oscuro"
+                    : "💜 Morado"}
+                </span>
+              </div>
+            </motion.div>
+          </div>
 
-              <Lottie
-                animationData={sharkAnimation}
-                loop={true}
-                className="relative z-10 drop-shadow-2xl transition-all duration-700"
-              />
-            </div>
-          </motion.div>
-
-          {/* Botones mejorados con colores adaptativos */}
-          <motion.div
-            initial={{ opacity: 0, y: 50 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 1, delay: 0.8 }}
-            className="flex flex-col md:flex-row gap-6 w-full max-w-lg"
-          >
-            <motion.button
-              onClick={() => navigate("/login")}
-              className={`group relative px-10 py-4 text-lg font-bold rounded-2xl bg-gradient-to-r ${buttonColors.primary} text-white shadow-2xl transition-all duration-500 transform hover:scale-105 hover:-translate-y-1`}
-              whileTap={{ scale: 0.95 }}
-              whileHover={{
-                boxShadow: `0 20px 40px ${buttonColors.shadow1}`,
-              }}
-            >
-              <span className="relative z-10 flex items-center justify-center gap-2">
-                🎮 Iniciar Sesión
-              </span>
-              <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-white/0 via-white/20 to-white/0 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-            </motion.button>
-
-            <motion.button
-              onClick={() => navigate("/register")}
-              className={`group relative px-10 py-4 text-lg font-bold rounded-2xl bg-gradient-to-r ${buttonColors.secondary} text-white shadow-2xl transition-all duration-500 transform hover:scale-105 hover:-translate-y-1`}
-              whileTap={{ scale: 0.95 }}
-              whileHover={{
-                boxShadow: `0 20px 40px ${buttonColors.shadow2}`,
-              }}
-            >
-              <span className="relative z-10 flex items-center justify-center gap-2">
-                ✨ Registrarse
-              </span>
-              <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-white/0 via-white/20 to-white/0 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-            </motion.button>
-          </motion.div>
-
-          {/* Botón de acceso a configuración */}
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 1.2, duration: 1 }}
-            className="flex items-center gap-4"
-          >
-            <motion.button
-              onClick={() => navigate("/ajustes")}
-              className={`${themeClasses.cardBg} ${themeClasses.text} px-6 py-3 rounded-full border ${themeClasses.borderColor} ${themeClasses.hover} transition-all duration-300 hover:scale-105 flex items-center gap-2`}
-              whileTap={{ scale: 0.95 }}
-            >
-              ⚙️ Configuración
-            </motion.button>
-
-            <div className={`text-sm ${themeClasses.textSecondary}`}>
-              Tema actual:{" "}
-              <span className="text-blue-400 font-semibold">
-                {theme === "light"
-                  ? "☀️ Claro"
-                  : theme === "dark"
-                  ? "🌙 Oscuro"
-                  : "💜 Morado"}
-              </span>
-            </div>
-          </motion.div>
-
-          {/* Indicador de scroll */}
+          {/* Indicador de scroll - RESPONSIVE */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 2, duration: 1 }}
-            className="absolute bottom-8 left-1/2 transform -translate-x-1/2"
+            className="absolute bottom-4 sm:bottom-8 left-1/2 transform -translate-x-1/2"
           >
             <motion.div
               animate={{ y: [0, 10, 0] }}
               transition={{ duration: 2, repeat: Infinity }}
-              className={`w-6 h-10 border-2 ${themeClasses.borderColor} rounded-full p-1`}
+              className={`w-5 h-8 sm:w-6 sm:h-10 border-2 ${themeClasses.borderColor} rounded-full p-1`}
             >
               <motion.div
-                animate={{ y: [0, 16, 0] }}
+                animate={{ y: [0, 12, 0] }}
                 transition={{ duration: 2, repeat: Infinity }}
-                className={`w-1 h-3 ${
+                className={`w-1 h-2 sm:h-3 ${
                   theme === "light"
                     ? "bg-gradient-to-b from-blue-600 to-purple-600"
                     : theme === "purple"
@@ -502,24 +508,26 @@ export const Home: React.FC = () => {
         <GameCarousel side="right" />
       </div>
 
-      {/* Glass card flotante con stats adaptativa al tema */}
+      {/* Glass card flotante con stats adaptativa al tema - RESPONSIVE */}
       <motion.div
         initial={{ opacity: 0, x: 100 }}
         animate={{ opacity: 1, x: 0 }}
         transition={{ delay: 1.5, duration: 1 }}
-        className="hidden xl:block fixed top-8 right-8 z-30"
+        className="hidden lg:block fixed top-4 right-4 xl:top-6 xl:right-6 z-30"
       >
         <div
           className={`backdrop-blur-lg ${
             theme === "light"
               ? "bg-white/20 border-gray-300/30"
               : "bg-white/10 border-white/20"
-          } border rounded-2xl p-6 shadow-2xl`}
+          } border rounded-lg xl:rounded-xl p-3 xl:p-4 shadow-2xl`}
         >
-          <h3 className={`${themeClasses.text} font-bold text-lg mb-4`}>
+          <h3
+            className={`${themeClasses.text} font-bold text-sm xl:text-base mb-2 xl:mb-3`}
+          >
             Gaming Stats
           </h3>
-          <div className="space-y-3 text-sm">
+          <div className="space-y-1.5 xl:space-y-2 text-xs">
             <div
               className={`flex justify-between ${themeClasses.textSecondary}`}
             >
